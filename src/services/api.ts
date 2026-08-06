@@ -272,10 +272,34 @@ async function getItemByIdMock(id: string): Promise<Item | undefined> {
 // ---------------------------------------------------------------------------
 // createListing — publishes a new item from the Upload screen.
 //
-// Later: POST `data` as JSON to the n8n "create listing" webhook, which
-// would persist it and return the canonical stored Item (with server id).
+// POSTs { initData, item: data } to {N8N_BASE_URL}/listings, which verifies
+// the signature server-side, resolves the seller's Supabase id, and inserts
+// the row. Falls back to the local mock store if VITE_N8N_BASE_URL isn't
+// set, there's no real Telegram session, or the request fails.
 // ---------------------------------------------------------------------------
 export async function createListing(data: CreateListingInput): Promise<Item> {
+  const n8nBaseUrl = import.meta.env.VITE_N8N_BASE_URL as string | undefined
+  const rawInitData = telegram.getRawInitData()
+
+  if (!n8nBaseUrl || !rawInitData) {
+    return createListingMock(data)
+  }
+
+  try {
+    const res = await fetch(`${n8nBaseUrl}/listings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ initData: rawInitData, item: data }),
+    })
+    if (!res.ok) throw new Error(`listings webhook returned ${res.status}`)
+    return (await res.json()) as Item
+  } catch (err) {
+    console.error('createListing: falling back to local mock store —', err)
+    return createListingMock(data)
+  }
+}
+
+async function createListingMock(data: CreateListingInput): Promise<Item> {
   await wait(600)
 
   const currentUser = await getCurrentUser()
@@ -304,8 +328,35 @@ export async function createListing(data: CreateListingInput): Promise<Item> {
 
 // ---------------------------------------------------------------------------
 // toggleFavorite — like/unlike an item. Returns the new favorited state.
+//
+// POSTs { initData } to {N8N_BASE_URL}/favorites/:id/toggle. Falls back to
+// the local mock store if VITE_N8N_BASE_URL isn't set, there's no real
+// Telegram session, or the request fails.
 // ---------------------------------------------------------------------------
 export async function toggleFavorite(id: string): Promise<boolean> {
+  const n8nBaseUrl = import.meta.env.VITE_N8N_BASE_URL as string | undefined
+  const rawInitData = telegram.getRawInitData()
+
+  if (!n8nBaseUrl || !rawInitData) {
+    return toggleFavoriteMock(id)
+  }
+
+  try {
+    const res = await fetch(`${n8nBaseUrl}/favorites/${encodeURIComponent(id)}/toggle`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ initData: rawInitData }),
+    })
+    if (!res.ok) throw new Error(`favorites toggle webhook returned ${res.status}`)
+    const data = (await res.json()) as { favorited: boolean }
+    return data.favorited
+  } catch (err) {
+    console.error('toggleFavorite: falling back to local mock store —', err)
+    return toggleFavoriteMock(id)
+  }
+}
+
+async function toggleFavoriteMock(id: string): Promise<boolean> {
   await wait(120)
 
   const idx = store.favoriteIds.indexOf(id)
