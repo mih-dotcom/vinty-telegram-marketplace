@@ -1,0 +1,197 @@
+import { useEffect, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { ChevronLeft, Heart, Share2 } from 'lucide-react'
+import { getItemById, getUserProfile } from '../services/api'
+import type { Item, User } from '../types'
+import { ConditionBadge, InfoChip } from '../components/common/ConditionBadge'
+import { Avatar } from '../components/common/Avatar'
+import { RatingStars } from '../components/common/RatingStars'
+import { Spinner } from '../components/common/ProgressRing'
+import { useApp } from '../context/AppContext'
+import { useBackButton } from '../hooks/useTelegram'
+import { telegram } from '../services/telegram'
+import { formatPrice, timeAgo } from '../utils/format'
+
+export function ItemDetailScreen() {
+  const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const { isFavorited, toggleFavorite } = useApp()
+
+  const [item, setItem] = useState<Item | null>(null)
+  const [seller, setSeller] = useState<User | null>(null)
+  const [photoIndex, setPhotoIndex] = useState(0)
+  const [loading, setLoading] = useState(true)
+
+  useBackButton(() => navigate(-1))
+
+  useEffect(() => {
+    if (!id) return
+    setLoading(true)
+    getItemById(id).then(async (found) => {
+      setItem(found ?? null)
+      if (found) {
+        const s = await getUserProfile(found.sellerId)
+        setSeller(s ?? null)
+      }
+      setLoading(false)
+    })
+  }, [id])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Spinner size={28} />
+      </div>
+    )
+  }
+
+  if (!item) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 px-6 text-center">
+        <p style={{ color: 'var(--text-secondary)' }}>This item couldn't be found.</p>
+        <button
+          onClick={() => navigate('/')}
+          className="cta-gradient text-white font-semibold px-5 py-2.5 rounded-pill press-spring"
+        >
+          Back to feed
+        </button>
+      </div>
+    )
+  }
+
+  const favorited = isFavorited(item.id)
+
+  return (
+    <div className="pb-32">
+      {/* Photo carousel */}
+      <div className="relative w-full aspect-[3/4] bg-black/20">
+        <img
+          src={item.images[photoIndex]}
+          alt={item.title}
+          className="w-full h-full object-cover"
+        />
+
+        <div className="absolute top-0 left-0 right-0 safe-top px-4 flex items-center justify-between">
+          <button
+            onClick={() => navigate(-1)}
+            aria-label="Back"
+            className="w-10 h-10 rounded-full glass flex items-center justify-center press-spring"
+          >
+            <ChevronLeft size={22} className="text-white" />
+          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => telegram.showAlert('Sharing is not wired up in this prototype yet.')}
+              aria-label="Share"
+              className="w-10 h-10 rounded-full glass flex items-center justify-center press-spring"
+            >
+              <Share2 size={18} className="text-white" />
+            </button>
+            <button
+              onClick={() => toggleFavorite(item)}
+              aria-label="Favorite"
+              className="w-10 h-10 rounded-full glass flex items-center justify-center press-spring"
+            >
+              <Heart
+                size={18}
+                className={favorited ? 'fill-green-brand text-green-brand' : 'text-white'}
+              />
+            </button>
+          </div>
+        </div>
+
+        {item.images.length > 1 && (
+          <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5">
+            {item.images.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setPhotoIndex(i)}
+                aria-label={`Photo ${i + 1}`}
+                className="glass rounded-full transition-all"
+                style={{
+                  width: i === photoIndex ? 18 : 6,
+                  height: 6,
+                  background: i === photoIndex ? 'var(--color-primary-green)' : 'rgba(255,255,255,0.5)',
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="px-4 pt-4 flex flex-col gap-4">
+        {/* Seller row */}
+        {seller && (
+          <button
+            onClick={() => {
+              telegram.hapticSelection()
+              telegram.showAlert('Public seller profiles are a placeholder in this prototype.')
+            }}
+            className="flex items-center gap-3 glass rounded-card px-3 py-3 press-spring text-left"
+          >
+            <Avatar src={seller.avatarUrl} name={seller.name} size={44} />
+            <div className="flex-1 min-w-0">
+              <p className="text-[14px] font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
+                {seller.name}
+              </p>
+              <RatingStars rating={seller.rating} count={seller.ratingCount} />
+            </div>
+            <span className="text-[13px] font-semibold" style={{ color: 'var(--color-primary-green)' }}>
+              View profile
+            </span>
+          </button>
+        )}
+
+        {/* Price + title */}
+        <div>
+          <p className="text-[26px] font-extrabold" style={{ color: 'var(--text-primary)' }}>
+            {formatPrice(item.price, item.currency)}
+          </p>
+          <h1 className="text-[17px] font-semibold mt-0.5" style={{ color: 'var(--text-primary)' }}>
+            {item.title}
+          </h1>
+          <p className="text-[13px] mt-1" style={{ color: 'var(--text-tertiary)' }}>
+            Listed {timeAgo(item.createdAt)}
+          </p>
+        </div>
+
+        {/* Badges */}
+        <div className="flex flex-wrap gap-2">
+          <ConditionBadge condition={item.condition} />
+          <InfoChip label={`Size ${item.size}`} />
+          <InfoChip label={item.brand} />
+          {item.color && <InfoChip label={item.color} />}
+        </div>
+
+        {/* Description */}
+        <div>
+          <h2 className="text-[13px] font-bold uppercase tracking-wide mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
+            Description
+          </h2>
+          <p className="text-[14px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+            {item.description}
+          </p>
+        </div>
+      </div>
+
+      {/* Sticky bottom bar */}
+      <div className="fixed bottom-0 left-0 right-0 flex justify-center px-4 safe-bottom pointer-events-none z-40">
+        <div className="glass-strong rounded-t-sheet w-full max-w-[560px] px-4 pt-3 pb-3 flex gap-3 pointer-events-auto shadow-glass-lg">
+          <button
+            onClick={() => telegram.showAlert('Messaging sellers is coming soon.')}
+            className="flex-1 glass rounded-pill py-3 font-semibold text-[14px] press-spring"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            Message seller
+          </button>
+          <button
+            onClick={() => telegram.showAlert('Checkout/payments aren’t wired up in this prototype yet.')}
+            className="flex-1 cta-gradient text-white rounded-pill py-3 font-bold text-[14px] press-spring shadow-glass"
+          >
+            {item.sold ? 'Sold out' : 'Buy now'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
