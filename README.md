@@ -94,4 +94,4 @@ types identical. No component or screen needs to change.
   are intentionally non-functional placeholders (a Telegram `showAlert`
   explains this) — payment/messaging integration comes later.
 - **Images**: sample photos are placeholder images from picsum.photos /
-  pravatar.cc, seeded deterministically per item/user.
+  pravatar.cc, seeded deterministically per item/user
