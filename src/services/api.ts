@@ -73,25 +73,46 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 // ---------------------------------------------------------------------------
 // getCurrentUser — identifies "me".
 //
-// For now, reads window.Telegram.WebApp.initDataUnsafe.user directly. Later
-// this should POST the raw initData string to an n8n webhook that validates
-// the Telegram signature server-side and returns a richer stored profile
-// (rating, listings, etc.) instead of trusting the client-side payload.
+// POSTs the raw, signed Telegram initData string to the n8n "identify"
+// webhook, which validates the signature server-side (using the bot token —
+// never exposed to the client) and returns/creates the stored Supabase
+// profile. Falls back to local mock data if:
+//   - VITE_N8N_BASE_URL isn't set (e.g. local dev without a backend yet), or
+//   - the app isn't running inside real Telegram (no initData to send), or
+//   - the webhook call fails for any reason (network, n8n down, etc.)
+// This keeps the UI usable during development even before/without the
+// backend being reachable.
 // ---------------------------------------------------------------------------
 export async function getCurrentUser(): Promise<User> {
-  await wait(150)
-
-  const tgUser = telegram.getInitDataUnsafe()?.user
   const fallback = getUserById('me')!
+  const n8nBaseUrl = import.meta.env.VITE_N8N_BASE_URL as string | undefined
+  const rawInitData = telegram.getRawInitData()
 
-  if (!tgUser) return fallback
+  if (!n8nBaseUrl || !rawInitData) {
+    await wait(150)
+    const tgUser = telegram.getInitDataUnsafe()?.user
+    if (!tgUser) return fallback
+    return {
+      ...fallback,
+      id: String(tgUser.id),
+      name: [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || fallback.name,
+      username: tgUser.username ?? fallback.username,
+      avatarUrl: tgUser.photo_url ?? fallback.avatarUrl,
+    }
+  }
 
-  return {
-    ...fallback,
-    id: String(tgUser.id),
-    name: [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') || fallback.name,
-    username: tgUser.username ?? fallback.username,
-    avatarUrl: tgUser.photo_url ?? fallback.avatarUrl,
+  try {
+    const res = await fetch(`${n8nBaseUrl}/identify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ initData: rawInitData }),
+    })
+    if (!res.ok) throw new Error(`identify webhook returned ${res.status}`)
+    const user = (await res.json()) as User
+    return user
+  } catch (err) {
+    console.error('getCurrentUser: falling back to local mock user —', err)
+    return fallback
   }
 }
 
