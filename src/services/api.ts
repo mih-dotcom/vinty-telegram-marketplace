@@ -118,8 +118,42 @@ export async function getCurrentUser(): Promise<User> {
 
 // ---------------------------------------------------------------------------
 // getItems — paginated, filterable feed query.
+//
+// GETs {N8N_BASE_URL}/items with filters as query params. Falls back to the
+// local mock store if VITE_N8N_BASE_URL isn't set or the request fails, so
+// the feed stays usable during development.
 // ---------------------------------------------------------------------------
 export async function getItems(filters: ItemFilters = {}): Promise<PaginatedResult<Item>> {
+  const n8nBaseUrl = import.meta.env.VITE_N8N_BASE_URL as string | undefined
+
+  if (!n8nBaseUrl) {
+    return getItemsMock(filters)
+  }
+
+  try {
+    const params = new URLSearchParams()
+    if (filters.query) params.set('query', filters.query)
+    if (filters.category) params.set('category', filters.category)
+    if (typeof filters.minPrice === 'number') params.set('minPrice', String(filters.minPrice))
+    if (typeof filters.maxPrice === 'number') params.set('maxPrice', String(filters.maxPrice))
+    if (filters.sizes?.length) params.set('sizes', filters.sizes.join(','))
+    if (filters.conditions?.length) params.set('conditions', filters.conditions.join(','))
+    if (filters.brands?.length) params.set('brands', filters.brands.join(','))
+    if (filters.colors?.length) params.set('colors', filters.colors.join(','))
+    if (filters.sortBy) params.set('sortBy', filters.sortBy)
+    if (filters.page) params.set('page', String(filters.page))
+    if (filters.pageSize) params.set('pageSize', String(filters.pageSize))
+
+    const res = await fetch(`${n8nBaseUrl}/items?${params.toString()}`)
+    if (!res.ok) throw new Error(`items webhook returned ${res.status}`)
+    return (await res.json()) as PaginatedResult<Item>
+  } catch (err) {
+    console.error('getItems: falling back to local mock data —', err)
+    return getItemsMock(filters)
+  }
+}
+
+async function getItemsMock(filters: ItemFilters = {}): Promise<PaginatedResult<Item>> {
   await wait(400)
 
   const {
@@ -204,8 +238,31 @@ export async function getItems(filters: ItemFilters = {}): Promise<PaginatedResu
 
 // ---------------------------------------------------------------------------
 // getItemById — single item detail lookup.
+//
+// GETs {N8N_BASE_URL}/items/:id. Falls back to the local mock store if
+// VITE_N8N_BASE_URL isn't set, the request fails, or the item genuinely
+// isn't found server-side either way.
 // ---------------------------------------------------------------------------
 export async function getItemById(id: string): Promise<Item | undefined> {
+  const n8nBaseUrl = import.meta.env.VITE_N8N_BASE_URL as string | undefined
+
+  if (!n8nBaseUrl) {
+    return getItemByIdMock(id)
+  }
+
+  try {
+    const res = await fetch(`${n8nBaseUrl}/items/${encodeURIComponent(id)}`)
+    if (!res.ok) throw new Error(`item detail webhook returned ${res.status}`)
+    const data = (await res.json()) as (Item & { notFound?: boolean }) | { notFound: true }
+    if ('notFound' in data && data.notFound) return undefined
+    return data as Item
+  } catch (err) {
+    console.error('getItemById: falling back to local mock data —', err)
+    return getItemByIdMock(id)
+  }
+}
+
+async function getItemByIdMock(id: string): Promise<Item | undefined> {
   await wait(250)
   const item = store.items.find((i) => i.id === id)
   if (!item) return undefined
