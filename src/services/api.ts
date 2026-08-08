@@ -18,6 +18,8 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import type {
+  CharityOrg,
+  Category,
   CreateListingInput,
   Item,
   ItemFilters,
@@ -26,6 +28,7 @@ import type {
 } from '../types'
 import { mockItems } from '../data/mockItems'
 import { getUserById, mockUsers } from '../data/mockUsers'
+import { mockCharities } from '../data/mockCharities'
 import { telegram } from './telegram'
 
 // ---------------------------------------------------------------------------
@@ -34,7 +37,7 @@ import { telegram } from './telegram'
 // This whole block disappears once real endpoints are wired up.
 // ---------------------------------------------------------------------------
 
-const STORAGE_KEY = 'vinty_mock_store_v1'
+const STORAGE_KEY = 'platforma_mock_store_v2'
 
 interface MockStore {
   items: Item[]
@@ -74,14 +77,9 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 // getCurrentUser — identifies "me".
 //
 // POSTs the raw, signed Telegram initData string to the n8n "identify"
-// webhook, which validates the signature server-side (using the bot token —
-// never exposed to the client) and returns/creates the stored Supabase
-// profile. Falls back to local mock data if:
-//   - VITE_N8N_BASE_URL isn't set (e.g. local dev without a backend yet), or
-//   - the app isn't running inside real Telegram (no initData to send), or
-//   - the webhook call fails for any reason (network, n8n down, etc.)
-// This keeps the UI usable during development even before/without the
-// backend being reachable.
+// webhook, which validates the signature server-side and returns/creates
+// the stored Supabase profile. Falls back to local Telegram data (or the
+// mock user) if VITE_N8N_BASE_URL isn't set or the request fails.
 // ---------------------------------------------------------------------------
 export async function getCurrentUser(): Promise<User> {
   const fallback = getUserById('me')!
@@ -108,8 +106,7 @@ export async function getCurrentUser(): Promise<User> {
       body: JSON.stringify({ initData: rawInitData }),
     })
     if (!res.ok) throw new Error(`identify webhook returned ${res.status}`)
-    const user = (await res.json()) as User
-    return user
+    return (await res.json()) as User
   } catch (err) {
     console.error('getCurrentUser: falling back to local mock user —', err)
     return fallback
@@ -120,8 +117,7 @@ export async function getCurrentUser(): Promise<User> {
 // getItems — paginated, filterable feed query.
 //
 // GETs {N8N_BASE_URL}/items with filters as query params. Falls back to the
-// local mock store if VITE_N8N_BASE_URL isn't set or the request fails, so
-// the feed stays usable during development.
+// local mock store if VITE_N8N_BASE_URL isn't set or the request fails.
 // ---------------------------------------------------------------------------
 export async function getItems(filters: ItemFilters = {}): Promise<PaginatedResult<Item>> {
   const n8nBaseUrl = import.meta.env.VITE_N8N_BASE_URL as string | undefined
@@ -134,6 +130,8 @@ export async function getItems(filters: ItemFilters = {}): Promise<PaginatedResu
     const params = new URLSearchParams()
     if (filters.query) params.set('query', filters.query)
     if (filters.category) params.set('category', filters.category)
+    if (filters.subcategories?.length) params.set('subcategories', filters.subcategories.join(','))
+    if (filters.genders?.length) params.set('genders', filters.genders.join(','))
     if (typeof filters.minPrice === 'number') params.set('minPrice', String(filters.minPrice))
     if (typeof filters.maxPrice === 'number') params.set('maxPrice', String(filters.maxPrice))
     if (filters.sizes?.length) params.set('sizes', filters.sizes.join(','))
@@ -159,6 +157,8 @@ async function getItemsMock(filters: ItemFilters = {}): Promise<PaginatedResult<
   const {
     query,
     category,
+    subcategories,
+    genders,
     minPrice,
     maxPrice,
     sizes,
@@ -170,7 +170,7 @@ async function getItemsMock(filters: ItemFilters = {}): Promise<PaginatedResult<
     pageSize = 8,
   } = filters
 
-  // Sold items stay visible in the feed (with a "Sold" badge) rather than disappearing.
+  // Sold items stay visible in the feed (with a "Продано" badge) rather than disappearing.
   let results = [...store.items]
 
   if (query?.trim()) {
@@ -184,6 +184,12 @@ async function getItemsMock(filters: ItemFilters = {}): Promise<PaginatedResult<
   }
   if (category && category !== 'All') {
     results = results.filter((i) => i.category === category)
+  }
+  if (subcategories?.length) {
+    results = results.filter((i) => subcategories.includes(i.subcategory))
+  }
+  if (genders?.length) {
+    results = results.filter((i) => genders.includes(i.gender))
   }
   if (typeof minPrice === 'number') {
     results = results.filter((i) => i.price >= minPrice)
@@ -272,10 +278,9 @@ async function getItemByIdMock(id: string): Promise<Item | undefined> {
 // ---------------------------------------------------------------------------
 // createListing — publishes a new item from the Upload screen.
 //
-// POSTs { initData, item: data } to {N8N_BASE_URL}/listings, which verifies
-// the signature server-side, resolves the seller's Supabase id, and inserts
-// the row. Falls back to the local mock store if VITE_N8N_BASE_URL isn't
-// set, there's no real Telegram session, or the request fails.
+// POSTs { initData, item: data } to {N8N_BASE_URL}/listings. Falls back to
+// the local mock store if VITE_N8N_BASE_URL isn't set, there's no real
+// Telegram session, or the request fails.
 // ---------------------------------------------------------------------------
 export async function createListing(data: CreateListingInput): Promise<Item> {
   const n8nBaseUrl = import.meta.env.VITE_N8N_BASE_URL as string | undefined
@@ -308,12 +313,14 @@ async function createListingMock(data: CreateListingInput): Promise<Item> {
     id: `local-${Date.now()}`,
     title: data.title,
     price: data.price,
-    currency: '$',
+    currency: '₽',
     images: data.images.length ? data.images : ['https://picsum.photos/seed/newitem/640/800'],
     size: data.size,
     brand: data.brand,
     condition: data.condition,
     category: data.category,
+    subcategory: data.subcategory,
+    gender: data.gender,
     color: data.color,
     sellerId: currentUser.id,
     description: data.description,
@@ -399,6 +406,15 @@ export async function getUserProfile(userId: string): Promise<User | undefined> 
 }
 
 // ---------------------------------------------------------------------------
+// getCharities — organizations accepting clothing donations (Charity tab).
+// Later: GET {N8N_BASE_URL}/charities, possibly filtered by user location.
+// ---------------------------------------------------------------------------
+export async function getCharities(): Promise<CharityOrg[]> {
+  await wait(300)
+  return mockCharities
+}
+
+// ---------------------------------------------------------------------------
 // uploadImage — TODO(n8n): point this at a real upload webhook.
 //
 // For the prototype, we just turn the picked File into a local object URL so
@@ -431,19 +447,118 @@ export async function markAsSold(id: string, sold = true): Promise<void> {
 
 // Known filter facets, surfaced for building the filter sheet UI.
 export const FACETS = {
-  categories: ['Women', 'Men', 'Kids', 'Shoes', 'Bags', 'Accessories'] as const,
-  conditions: ['New with tags', 'Very good', 'Good', 'Satisfactory'] as const,
-  sizes: ['XS', 'S', 'M', 'L', 'XL', '36', '38', '40', '42', '44', 'One size'],
-  colors: [
-    { name: 'Black', hex: '#111111' },
-    { name: 'White', hex: '#FFFFFF' },
-    { name: 'Grey', hex: '#9CA3AF' },
-    { name: 'Beige', hex: '#E4D4B4' },
-    { name: 'Brown', hex: '#7B4B2A' },
-    { name: 'Blue', hex: '#2563EB' },
-    { name: 'Green', hex: '#00B248' },
-    { name: 'Yellow', hex: '#FACC15' },
-    { name: 'Gold', hex: '#D4AF37' },
+  genders: ['Мужской', 'Женский', 'Унисекс', 'Дети'] as const,
+
+  conditions: [
+    'Новая с биркой',
+    'Новая без бирки',
+    'Есть дефекты',
+    'Ношеная один раз',
+    'Носилась часто',
+  ] as const,
+
+  categories: ['Обувь', 'Верхняя одежда', 'Верх', 'Низ', 'Аксессуары'] as const,
+
+  // Subcategory options depend on the selected Category.
+  subcategoriesByCategory: {
+    Обувь: ['Кроссовки', 'Ботинки', 'Кеды', 'Сандалии', 'Сланцы', 'Туфли', 'Другое'],
+    'Верхняя одежда': [
+      'Бомберы',
+      'Джинсовые куртки',
+      'Анораки',
+      'Парки',
+      'Ветровки',
+      'Пиджаки',
+      'Пальто',
+      'Кожаные куртки',
+      'Плащи',
+      'Жилеты',
+      'Куртки',
+      'Другое',
+    ],
+    Верх: [
+      'Свитера',
+      'Кардиганы',
+      'Свитшоты',
+      'Олимпийки',
+      'Рубашки',
+      'Лонгсливы',
+      'Поло',
+      'Футболки',
+      'Худи',
+      'Платья',
+      'Костюмы',
+      'Майки',
+      'Другое',
+    ],
+    Низ: ['Джинсы', 'Брюки', 'Шорты', 'Спортивные штаны', 'Плавки', 'Юбки', 'Другое'],
+    Аксессуары: [
+      'Наручные часы',
+      'Шапки',
+      'Шарфы',
+      'Панамы',
+      'Кепки',
+      'Ремни',
+      'Нижнее бельё',
+      'Носки',
+      'Солнцезащитные очки',
+      'Сумки',
+      'Рюкзаки',
+      'Кошельки',
+      'Другое',
+    ],
+  } as Record<Category, string[]>,
+
+  // Size options depend on category — shoe sizing and clothing sizing don't
+  // mix well in one flat list. sizes below is the master/combined list, used
+  // when no category is selected yet (e.g. the filter sheet before a
+  // category is chosen).
+  sizesByCategory: {
+    Обувь: ['35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46'],
+    'Верхняя одежда': ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
+    Верх: ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
+    Низ: ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
+    Аксессуары: ['Один размер'],
+  } as Record<Category, string[]>,
+
+  sizes: [
+    'XXS',
+    'XS',
+    'S',
+    'M',
+    'L',
+    'XL',
+    'XXL',
+    'XXXL',
+    '35',
+    '36',
+    '37',
+    '38',
+    '39',
+    '40',
+    '41',
+    '42',
+    '43',
+    '44',
+    '45',
+    '46',
+    'Один размер',
   ],
+
+  colors: [
+    { name: 'Чёрный', hex: '#111111' },
+    { name: 'Белый', hex: '#FFFFFF' },
+    { name: 'Серый', hex: '#9CA3AF' },
+    { name: 'Бежевый', hex: '#E4D4B4' },
+    { name: 'Коричневый', hex: '#7B4B2A' },
+    { name: 'Синий', hex: '#2563EB' },
+    { name: 'Зелёный', hex: '#00B248' },
+    { name: 'Жёлтый', hex: '#FACC15' },
+    { name: 'Золотой', hex: '#D4AF37' },
+  ],
+
   brands: ["Levi's", 'Nike', 'Coach', 'Zara', 'Hunter', 'Mejuri', 'H&M', 'Uniqlo', 'Muji', 'Adidas'],
+
+  minPrice: 1000,
+  maxPrice: 500000,
 }
