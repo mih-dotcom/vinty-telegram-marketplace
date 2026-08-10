@@ -1,10 +1,10 @@
-# Vinty — Telegram Mini App Marketplace (Prototype)
+# PLATFORMA — Telegram Mini App Marketplace (Prototype)
 
 A frontend-only Vinted/Depop-style marketplace prototype built as a Telegram
-Mini App: React + TypeScript + Tailwind CSS, "Liquid Glass" (iOS-style
-glassmorphism) design, green accent theme, integrated with the Telegram Web
-App SDK. All data is mock/local — there is no real backend or payment
-integration (see [Swapping in a real backend](#swapping-in-a-real-backend-n8n)).
+Mini App: React + TypeScript + Tailwind CSS, clean flat minimal design (solid
+green accent, no gradients, no glassmorphism/blur) integrated with the
+Telegram Web App SDK. All data is mock/local — there is no real backend or
+payment integration (see [Swapping in a real backend](#swapping-in-a-real-backend-n8n)).
 
 ## Requirements
 
@@ -55,14 +55,18 @@ src/
   context/        AppContext — current user, favorites, theme, shared app state
   hooks/          useTelegramTheme, useMainButton, useBackButton
   components/
-    common/       GlassCard, PricePill, ConditionBadge, Avatar, SearchBar, ...
+    common/       GlassCard, PricePill, ConditionBadge, Avatar, SearchBar,
+                  PromoBanner, CategoryIconRow, QuickFilterChips, ...
     item/         ItemCard, ItemGrid
     filters/      FilterSheet, PriceRangeSlider, ChipSelect, ColorSwatches
     profile/      TabSwitcher, SettingsSheet
-    layout/       BottomNav, ScreenHeader, Sheet (generic bottom sheet)
+    layout/       BottomNav, ScreenHeader, HomeHeader, Sheet (generic bottom sheet)
   screens/        FeedScreen, SearchScreen, ItemDetailScreen, UploadScreen,
-                  ProfileScreen, FavoritesScreen
+                  ProfileScreen, CharityScreen
 ```
+
+Favorites has no dedicated bottom-nav tab — it's reachable via **Profile →
+Favorites** (the bottom-nav heart slot is now the **Charity** tab).
 
 ## Swapping in a real backend (n8n)
 
@@ -79,6 +83,7 @@ already `async` and returns the same typed shape a real endpoint would:
 | `toggleFavorite(id)` | Mutates a local favorites list | POST `/favorites/:id/toggle` |
 | `uploadImage(file)` | Returns a local `URL.createObjectURL(file)` | Multipart POST to an upload webhook, returning a hosted URL |
 | `deleteListing` / `markAsSold` / `getItemsBySeller` / `getUserProfile` | Mock store reads/writes | Matching REST/webhook calls |
+| `getCharities()` | Returns mock charity organizations | GET `/charities`, optionally filtered by user location |
 
 To wire up n8n: add a `VITE_N8N_BASE_URL` env var, replace each function body
 with a `fetch()` call to `${VITE_N8N_BASE_URL}/<route>`, and keep the return
@@ -87,9 +92,12 @@ types identical. No component or screen needs to change.
 ## Notes on this prototype
 
 - **Persistence**: created listings and favorites are saved to
-  `localStorage` (key `vinty_mock_store_v1`) so they survive a page reload
-  during a demo — this whole mechanism disappears once `api.ts` is wired to
-  a real backend.
+  `localStorage` (key `platforma_mock_store_v1`) so they survive a page
+  reload during a demo — this whole mechanism disappears once `api.ts` is
+  wired to a real backend.
+- **Charity tab**: lists fictional organizations accepting clothing
+  donations (`src/data/mockCharities.ts`) — not real charities, placeholder
+  content for the prototype.
 - **No payments**: "Buy now" and "Message seller" on the item detail screen
   are intentionally non-functional placeholders (a Telegram `showAlert`
   explains this) — payment/messaging integration comes later.

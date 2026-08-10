@@ -32,7 +32,7 @@ export function Sheet({
           </h2>
           <button
             onClick={onClose}
-            aria-label="Close"
+            aria-label="Закрыть"
             className="w-8 h-8 rounded-full glass flex items-center justify-center press-spring"
           >
             <X size={16} style={{ color: 'var(--text-primary)' }} />

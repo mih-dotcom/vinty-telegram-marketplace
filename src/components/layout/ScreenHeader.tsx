@@ -29,7 +29,7 @@ export function ScreenHeader({
         {onBack && (
           <button
             onClick={handleBack}
-            aria-label="Back"
+            aria-label="Назад"
             className="w-9 h-9 rounded-full glass flex items-center justify-center press-spring shrink-0"
           >
             <ChevronLeft size={20} style={{ color: 'var(--text-primary)' }} />

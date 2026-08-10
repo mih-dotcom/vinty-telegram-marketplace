@@ -26,7 +26,7 @@ export function ItemCard({ item }: { item: Item }) {
             e.stopPropagation()
             toggleFavorite(item)
           }}
-          aria-label="Favorite"
+          aria-label="В избранное"
           className="absolute top-2 right-2 w-8 h-8 rounded-full glass flex items-center justify-center press-spring"
         >
           <Heart

@@ -6,7 +6,7 @@ const avatar = (seed: string) => `https://i.pravatar.cc/150?u=${seed}`
 export const mockUsers: User[] = [
   {
     id: 'u1',
-    name: 'Aria Bloom',
+    name: 'Мария Соколова',
     username: 'ariabloom',
     avatarUrl: avatar('aria'),
     rating: 4.8,
@@ -19,7 +19,7 @@ export const mockUsers: User[] = [
   },
   {
     id: 'u2',
-    name: 'Leo Marsh',
+    name: 'Лев Морозов',
     username: 'leomarsh',
     avatarUrl: avatar('leo'),
     rating: 4.6,
@@ -32,7 +32,7 @@ export const mockUsers: User[] = [
   },
   {
     id: 'u3',
-    name: 'Nina Volkov',
+    name: 'Нина Волкова',
     username: 'ninav',
     avatarUrl: avatar('nina'),
     rating: 5.0,
@@ -45,7 +45,7 @@ export const mockUsers: User[] = [
   },
   {
     id: 'u4',
-    name: 'Sam Okafor',
+    name: 'Семён Егоров',
     username: 'samokafor',
     avatarUrl: avatar('sam'),
     rating: 4.3,
@@ -59,7 +59,7 @@ export const mockUsers: User[] = [
   // "me" — used as the fallback current user when not running inside Telegram.
   {
     id: 'me',
-    name: 'You',
+    name: 'Гость',
     username: 'you',
     avatarUrl: avatar('me'),
     rating: 4.9,

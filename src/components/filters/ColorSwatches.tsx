@@ -21,7 +21,7 @@ export function ColorSwatches({
             className="press-spring w-9 h-9 rounded-full flex items-center justify-center border"
             style={{
               backgroundColor: hex,
-              borderColor: active ? 'var(--color-primary-green)' : 'var(--glass-border)',
+              borderColor: active ? 'var(--color-primary-green)' : 'var(--surface-border)',
               borderWidth: active ? 2 : 1,
             }}
           >

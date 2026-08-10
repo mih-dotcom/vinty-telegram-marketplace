@@ -5,7 +5,7 @@ import { BottomNav } from './components/layout/BottomNav'
 import { FeedScreen } from './screens/FeedScreen'
 import { SearchScreen } from './screens/SearchScreen'
 import { UploadScreen } from './screens/UploadScreen'
-import { FavoritesScreen } from './screens/FavoritesScreen'
+import { CharityScreen } from './screens/CharityScreen'
 import { ProfileScreen } from './screens/ProfileScreen'
 import { ItemDetailScreen } from './screens/ItemDetailScreen'
 import { telegram } from './services/telegram'
@@ -32,7 +32,7 @@ function AppRoutes() {
         <Route path="/" element={<FeedScreen />} />
         <Route path="/search" element={<SearchScreen />} />
         <Route path="/sell" element={<UploadScreen />} />
-        <Route path="/favorites" element={<FavoritesScreen />} />
+        <Route path="/charity" element={<CharityScreen />} />
         <Route path="/profile" element={<ProfileScreen />} />
         <Route path="/item/:id" element={<ItemDetailScreen />} />
       </Routes>

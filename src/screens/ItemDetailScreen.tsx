@@ -48,12 +48,12 @@ export function ItemDetailScreen() {
   if (!item) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3 px-6 text-center">
-        <p style={{ color: 'var(--text-secondary)' }}>This item couldn't be found.</p>
+        <p style={{ color: 'var(--text-secondary)' }}>Не удалось найти эту вещь.</p>
         <button
           onClick={() => navigate('/')}
           className="cta-gradient text-white font-semibold px-5 py-2.5 rounded-pill press-spring"
         >
-          Back to feed
+          На главную
         </button>
       </div>
     )
@@ -74,22 +74,22 @@ export function ItemDetailScreen() {
         <div className="absolute top-0 left-0 right-0 safe-top px-4 flex items-center justify-between">
           <button
             onClick={() => navigate(-1)}
-            aria-label="Back"
+            aria-label="Назад"
             className="w-10 h-10 rounded-full glass flex items-center justify-center press-spring"
           >
             <ChevronLeft size={22} className="text-white" />
           </button>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => telegram.showAlert('Sharing is not wired up in this prototype yet.')}
-              aria-label="Share"
+              onClick={() => telegram.showAlert('Функция «поделиться» пока не подключена.')}
+              aria-label="Поделиться"
               className="w-10 h-10 rounded-full glass flex items-center justify-center press-spring"
             >
               <Share2 size={18} className="text-white" />
             </button>
             <button
               onClick={() => toggleFavorite(item)}
-              aria-label="Favorite"
+              aria-label="В избранное"
               className="w-10 h-10 rounded-full glass flex items-center justify-center press-spring"
             >
               <Heart
@@ -106,7 +106,7 @@ export function ItemDetailScreen() {
               <button
                 key={i}
                 onClick={() => setPhotoIndex(i)}
-                aria-label={`Photo ${i + 1}`}
+                aria-label={`Фото ${i + 1}`}
                 className="glass rounded-full transition-all"
                 style={{
                   width: i === photoIndex ? 18 : 6,
@@ -125,7 +125,7 @@ export function ItemDetailScreen() {
           <button
             onClick={() => {
               telegram.hapticSelection()
-              telegram.showAlert('Public seller profiles are a placeholder in this prototype.')
+              telegram.showAlert('Публичные профили продавцов пока не реализованы — это прототип.')
             }}
             className="flex items-center gap-3 glass rounded-card px-3 py-3 press-spring text-left"
           >
@@ -137,7 +137,7 @@ export function ItemDetailScreen() {
               <RatingStars rating={seller.rating} count={seller.ratingCount} />
             </div>
             <span className="text-[13px] font-semibold" style={{ color: 'var(--color-primary-green)' }}>
-              View profile
+              Профиль
             </span>
           </button>
         )}
@@ -151,22 +151,23 @@ export function ItemDetailScreen() {
             {item.title}
           </h1>
           <p className="text-[13px] mt-1" style={{ color: 'var(--text-tertiary)' }}>
-            Listed {timeAgo(item.createdAt)}
+            Добавлено {timeAgo(item.createdAt)}
           </p>
         </div>
 
-        {/* Badges */}
+        {/* Бейджи */}
         <div className="flex flex-wrap gap-2">
           <ConditionBadge condition={item.condition} />
-          <InfoChip label={`Size ${item.size}`} />
+          <InfoChip label={`Размер ${item.size}`} />
           <InfoChip label={item.brand} />
+          <InfoChip label={item.gender} />
           {item.color && <InfoChip label={item.color} />}
         </div>
 
-        {/* Description */}
+        {/* Описание */}
         <div>
           <h2 className="text-[13px] font-bold uppercase tracking-wide mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
-            Description
+            Описание
           </h2>
           <p className="text-[14px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
             {item.description}
@@ -178,17 +179,17 @@ export function ItemDetailScreen() {
       <div className="fixed bottom-0 left-0 right-0 flex justify-center px-4 safe-bottom pointer-events-none z-40">
         <div className="glass-strong rounded-t-sheet w-full max-w-[560px] px-4 pt-3 pb-3 flex gap-3 pointer-events-auto shadow-glass-lg">
           <button
-            onClick={() => telegram.showAlert('Messaging sellers is coming soon.')}
+            onClick={() => telegram.showAlert('Переписка с продавцами скоро появится.')}
             className="flex-1 glass rounded-pill py-3 font-semibold text-[14px] press-spring"
             style={{ color: 'var(--text-primary)' }}
           >
-            Message seller
+            Написать продавцу
           </button>
           <button
-            onClick={() => telegram.showAlert('Checkout/payments aren’t wired up in this prototype yet.')}
+            onClick={() => telegram.showAlert('Оплата пока не подключена — это прототип.')}
             className="flex-1 cta-gradient text-white rounded-pill py-3 font-bold text-[14px] press-spring shadow-glass"
           >
-            {item.sold ? 'Sold out' : 'Buy now'}
+            {item.sold ? 'Продано' : 'Купить'}
           </button>
         </div>
       </div>

@@ -5,19 +5,21 @@
 // swapping the data source later is a one-file change (see services/api.ts).
 // ─────────────────────────────────────────────────────────────────────────
 
-export type Category =
-  | 'Women'
-  | 'Men'
-  | 'Kids'
-  | 'Shoes'
-  | 'Bags'
-  | 'Accessories'
+export type Gender = 'Мужской' | 'Женский' | 'Унисекс' | 'Дети'
+
+export type Category = 'Обувь' | 'Верхняя одежда' | 'Верх' | 'Низ' | 'Аксессуары'
+
+// Subcategories depend on the selected Category — the full list per category
+// lives in services/api.ts (FACETS.subcategoriesByCategory) rather than as a
+// giant exhaustive union here, since it's really just a curated lookup table.
+export type Subcategory = string
 
 export type Condition =
-  | 'New with tags'
-  | 'Very good'
-  | 'Good'
-  | 'Satisfactory'
+  | 'Новая с биркой'
+  | 'Новая без бирки'
+  | 'Есть дефекты'
+  | 'Ношеная один раз'
+  | 'Носилась часто'
 
 export interface Item {
   id: string
@@ -29,6 +31,8 @@ export interface Item {
   brand: string
   condition: Condition
   category: Category
+  subcategory: Subcategory
+  gender: Gender
   color?: string
   sellerId: string
   description: string
@@ -54,12 +58,16 @@ export interface User {
 export interface ItemFilters {
   query?: string
   category?: Category | 'All'
+  subcategories?: Subcategory[]
+  genders?: Gender[]
   minPrice?: number
   maxPrice?: number
   sizes?: string[]
   conditions?: Condition[]
   brands?: string[]
   colors?: string[]
+  // 'relevant' ("Trending") stays available for the Home quick-filter chip
+  // even though the full filter sheet only surfaces the other three.
   sortBy?: 'newest' | 'price_low' | 'price_high' | 'relevant'
   page?: number
   pageSize?: number
@@ -78,10 +86,23 @@ export interface CreateListingInput {
   title: string
   description: string
   category: Category
+  subcategory: Subcategory
+  gender: Gender
   size: string
   brand: string
   condition: Condition
   color?: string
   price: number
   images: string[] // local object URLs / base64 for the prototype
+}
+
+// An organization that accepts clothing donations, shown on the Charity tab.
+export interface CharityOrg {
+  id: string
+  name: string
+  logoUrl: string
+  description: string
+  location: string
+  acceptedItems: string[]
+  websiteUrl?: string
 }

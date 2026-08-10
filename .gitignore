@@ -4,6 +4,9 @@ dist-ssr
 *.local
 *.tsbuildinfo
 
+# Environment variables (secrets/deployment-specific — keep .env.example in the repo instead)
+.env
+
 # Editor
 .vscode/*
 !.vscode/extensions.json

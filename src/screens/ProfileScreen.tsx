@@ -15,13 +15,13 @@ import type { Item } from '../types'
 import { formatMemberSince } from '../utils/format'
 import { telegram } from '../services/telegram'
 
-const TABS = ['My Listings', 'Favorites', 'Purchases', 'Sold'] as const
+const TABS = ['Мои объявления', 'Избранное', 'Покупки', 'Продано'] as const
 type Tab = (typeof TABS)[number]
 
 export function ProfileScreen() {
   const navigate = useNavigate()
   const { currentUser, loadingUser } = useApp()
-  const [tab, setTab] = useState<Tab>('My Listings')
+  const [tab, setTab] = useState<Tab>('Мои объявления')
   const [items, setItems] = useState<Item[]>([])
   const [loading, setLoading] = useState(true)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -30,16 +30,16 @@ export function ProfileScreen() {
   const load = useCallback(async () => {
     if (!currentUser) return
     setLoading(true)
-    if (tab === 'Favorites') {
+    if (tab === 'Избранное') {
       setItems(await getFavoriteItems())
-    } else if (tab === 'My Listings') {
+    } else if (tab === 'Мои объявления') {
       const mine = await getItemsBySeller(currentUser.id)
       setItems(mine.filter((i) => !i.sold))
-    } else if (tab === 'Sold') {
+    } else if (tab === 'Продано') {
       const mine = await getItemsBySeller(currentUser.id)
       setItems(mine.filter((i) => i.sold))
     } else {
-      setItems([]) // Purchases: no checkout flow exists yet in this prototype
+      setItems([]) // Покупки: чекаут пока не реализован в прототипе
     }
     setLoading(false)
   }, [tab, currentUser])
@@ -55,7 +55,7 @@ export function ProfileScreen() {
   }
 
   const handleDelete = async (item: Item) => {
-    const ok = await telegram.showConfirm(`Delete "${item.title}"? This can't be undone.`)
+    const ok = await telegram.showConfirm(`Удалить «${item.title}»? Это действие нельзя отменить.`)
     if (!ok) return
     await deleteListing(item.id)
     setMenuItem(null)
@@ -74,11 +74,11 @@ export function ProfileScreen() {
     <div className="pb-28">
       <header className="sticky top-0 z-30 glass safe-top px-4 pb-3 flex items-center justify-between">
         <h1 className="text-[22px] font-bold" style={{ color: 'var(--text-primary)' }}>
-          Profile
+          Профиль
         </h1>
         <button
           onClick={() => setSettingsOpen(true)}
-          aria-label="Settings"
+          aria-label="Настройки"
           className="w-9 h-9 rounded-full glass flex items-center justify-center press-spring"
         >
           <Settings size={18} style={{ color: 'var(--text-primary)' }} />
@@ -104,21 +104,21 @@ export function ProfileScreen() {
 
         <div className="flex gap-4 text-[13px]" style={{ color: 'var(--text-secondary)' }}>
           <span>
-            <b style={{ color: 'var(--text-primary)' }}>{currentUser.followers}</b> followers
+            <b style={{ color: 'var(--text-primary)' }}>{currentUser.followers}</b> подписчиков
           </span>
           <span>
-            <b style={{ color: 'var(--text-primary)' }}>{currentUser.following}</b> following
+            <b style={{ color: 'var(--text-primary)' }}>{currentUser.following}</b> подписок
           </span>
         </div>
 
-        {/* Stats card */}
+        {/* Карточка статистики */}
         <GlassCard className="px-4 py-4 grid grid-cols-3 text-center gap-2">
           <div>
             <p className="text-[18px] font-bold" style={{ color: 'var(--text-primary)' }}>
               {currentUser.itemsSold}
             </p>
             <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
-              Sold
+              Продано
             </p>
           </div>
           <div>
@@ -126,7 +126,7 @@ export function ProfileScreen() {
               {currentUser.itemsListed}
             </p>
             <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
-              Listed
+              Выставлено
             </p>
           </div>
           <div>
@@ -134,17 +134,17 @@ export function ProfileScreen() {
               {formatMemberSince(currentUser.memberSince)}
             </p>
             <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
-              Member since
+              На платформе с
             </p>
           </div>
         </GlassCard>
 
         <button
-          onClick={() => telegram.showAlert('Edit profile is a placeholder in this prototype.')}
+          onClick={() => telegram.showAlert('Редактирование профиля пока не реализовано — это прототип.')}
           className="glass rounded-pill py-2.5 font-semibold text-[14px] press-spring"
           style={{ color: 'var(--text-primary)' }}
         >
-          Edit Profile
+          Редактировать профиль
         </button>
 
         <TabSwitcher tabs={TABS} active={tab} onChange={setTab} />
@@ -156,14 +156,14 @@ export function ProfileScreen() {
           </div>
         ) : items.length === 0 ? (
           <p className="text-center text-[14px] py-10" style={{ color: 'var(--text-tertiary)' }}>
-            {tab === 'Purchases'
-              ? "You haven't bought anything yet — checkout isn't wired up in this prototype."
-              : 'Nothing here yet.'}
+            {tab === 'Покупки'
+              ? 'Вы пока ничего не купили — оплата ещё не подключена в этом прототипе.'
+              : 'Здесь пока пусто.'}
           </p>
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {items.map((item) => {
-              const isOwn = tab === 'My Listings' || tab === 'Sold'
+              const isOwn = tab === 'Мои объявления' || tab === 'Продано'
               return (
                 <div
                   key={item.id}
@@ -181,7 +181,7 @@ export function ProfileScreen() {
                           e.stopPropagation()
                           setMenuItem(item)
                         }}
-                        aria-label="More options"
+                        aria-label="Ещё"
                         className="absolute top-2 right-2 w-8 h-8 rounded-full glass flex items-center justify-center press-spring"
                       >
                         <MoreVertical size={15} className="text-white" />
@@ -213,20 +213,20 @@ export function ProfileScreen() {
               className="glass rounded-2xl px-4 py-3.5 text-left press-spring text-[14.5px] font-medium"
               style={{ color: 'var(--text-primary)' }}
             >
-              {menuItem.sold ? 'Mark as available' : 'Mark as sold'}
+              {menuItem.sold ? 'Вернуть в продажу' : 'Отметить проданным'}
             </button>
             <button
               onClick={() => navigate(`/item/${menuItem.id}`)}
               className="glass rounded-2xl px-4 py-3.5 text-left press-spring text-[14.5px] font-medium"
               style={{ color: 'var(--text-primary)' }}
             >
-              View listing
+              Открыть объявление
             </button>
             <button
               onClick={() => handleDelete(menuItem)}
               className="glass rounded-2xl px-4 py-3.5 text-left press-spring text-[14.5px] font-medium text-red-400"
             >
-              Delete listing
+              Удалить объявление
             </button>
           </div>
         )}

@@ -1,7 +1,8 @@
 import { useId } from 'react'
 
-const MIN = 0
-const MAX = 200
+const MIN = 1000
+const MAX = 500000
+const STEP = 500
 
 export function PriceRangeSlider({
   min,
@@ -20,13 +21,13 @@ export function PriceRangeSlider({
     <div className="pt-1 pb-2">
       <div className="flex items-center justify-between mb-4">
         <div className="glass rounded-pill px-3 py-1.5 text-[13px] font-semibold" style={{ color: 'var(--text-primary)' }}>
-          ${min}
+          {min.toLocaleString('ru-RU')} ₽
         </div>
         <span className="text-[12px]" style={{ color: 'var(--text-tertiary)' }}>
-          to
+          до
         </span>
         <div className="glass rounded-pill px-3 py-1.5 text-[13px] font-semibold" style={{ color: 'var(--text-primary)' }}>
-          ${max}
+          {max.toLocaleString('ru-RU')} ₽
           {max >= MAX ? '+' : ''}
         </div>
       </div>
@@ -38,7 +39,7 @@ export function PriceRangeSlider({
           style={{
             left: `${minPct}%`,
             right: `${100 - maxPct}%`,
-            background: 'var(--gradient-cta)',
+            background: 'var(--color-primary-green)',
           }}
         />
         <input
@@ -46,9 +47,9 @@ export function PriceRangeSlider({
           type="range"
           min={MIN}
           max={MAX}
-          step={1}
+          step={STEP}
           value={min}
-          onChange={(e) => onChange(Math.min(Number(e.target.value), max - 1), max)}
+          onChange={(e) => onChange(Math.min(Number(e.target.value), max - STEP), max)}
           className="range-thumb absolute w-full appearance-none bg-transparent pointer-events-none"
         />
         <input
@@ -56,9 +57,9 @@ export function PriceRangeSlider({
           type="range"
           min={MIN}
           max={MAX}
-          step={1}
+          step={STEP}
           value={max}
-          onChange={(e) => onChange(min, Math.max(Number(e.target.value), min + 1))}
+          onChange={(e) => onChange(min, Math.max(Number(e.target.value), min + STEP))}
           className="range-thumb absolute w-full appearance-none bg-transparent pointer-events-none"
         />
       </div>

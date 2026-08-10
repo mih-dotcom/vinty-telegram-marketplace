@@ -2,11 +2,11 @@ import { Heart, Home, Plus, Search, User } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 const TABS = [
-  { path: '/', label: 'Home', icon: Home, elevated: false },
-  { path: '/search', label: 'Search', icon: Search, elevated: false },
-  { path: '/sell', label: 'Sell', icon: Plus, elevated: true },
-  { path: '/favorites', label: 'Favorites', icon: Heart, elevated: false },
-  { path: '/profile', label: 'Profile', icon: User, elevated: false },
+  { path: '/', label: 'Главная', icon: Home, elevated: false },
+  { path: '/search', label: 'Поиск', icon: Search, elevated: false },
+  { path: '/sell', label: 'Продать', icon: Plus, elevated: true },
+  { path: '/charity', label: 'Добро', icon: Heart, elevated: false },
+  { path: '/profile', label: 'Профиль', icon: User, elevated: false },
 ] as const
 
 export function BottomNav() {

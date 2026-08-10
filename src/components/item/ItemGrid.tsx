@@ -6,7 +6,7 @@ import { PackageSearch } from 'lucide-react'
 export function ItemGrid({
   items,
   loading,
-  emptyLabel = 'No items found',
+  emptyLabel = 'Ничего не найдено',
 }: {
   items: Item[]
   loading?: boolean

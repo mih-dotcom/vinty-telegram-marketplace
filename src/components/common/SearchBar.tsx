@@ -4,7 +4,7 @@ export function SearchBar({
   value,
   onChange,
   onFilterClick,
-  placeholder = 'Search items, brands...',
+  placeholder = 'Поиск вещей, брендов...',
   autoFocus,
 }: {
   value: string
@@ -29,7 +29,7 @@ export function SearchBar({
       {onFilterClick && (
         <button
           onClick={onFilterClick}
-          aria-label="Filters"
+          aria-label="Фильтры"
           className="glass rounded-pill w-11 h-11 flex items-center justify-center press-spring shrink-0"
         >
           <SlidersHorizontal size={18} style={{ color: 'var(--text-primary)' }} />

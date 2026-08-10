@@ -50,7 +50,7 @@ export const telegram = {
   },
 
   getColorScheme(): 'light' | 'dark' {
-    return safeCall((tg) => tg.colorScheme, 'dark') ?? 'dark'
+    return safeCall((tg) => tg.colorScheme, 'light') ?? 'light'
   },
 
   getThemeParams(): TelegramThemeParams {

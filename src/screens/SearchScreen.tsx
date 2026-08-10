@@ -5,7 +5,7 @@ import { FACETS, getItems } from '../services/api'
 import type { Item } from '../types'
 import { Search } from 'lucide-react'
 
-const RECENT_KEY = 'vinty_recent_searches'
+const RECENT_KEY = 'platforma_recent_searches'
 
 function loadRecent(): string[] {
   try {
@@ -60,7 +60,7 @@ export function SearchScreen() {
           value={query}
           onChange={setQuery}
           autoFocus
-          placeholder="Search items, brands, categories..."
+          placeholder="Поиск вещей, брендов, категорий..."
         />
       </header>
 
@@ -70,7 +70,7 @@ export function SearchScreen() {
             {recent.length > 0 && (
               <section>
                 <h3 className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>
-                  Recent searches
+                  Недавние запросы
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {recent.map((term) => (
@@ -88,7 +88,7 @@ export function SearchScreen() {
             )}
             <section>
               <h3 className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>
-                Popular brands
+                Популярные бренды
               </h3>
               <div className="flex flex-wrap gap-2">
                 {FACETS.brands.map((b) => (
@@ -109,12 +109,12 @@ export function SearchScreen() {
             <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
               <Search size={32} style={{ color: 'var(--text-tertiary)' }} />
               <p className="text-[13px]" style={{ color: 'var(--text-tertiary)' }}>
-                Search for items, brands, or categories
+                Ищите вещи, бренды или категории
               </p>
             </div>
           </div>
         ) : (
-          <ItemGrid items={items} loading={loading} emptyLabel={`No results for "${query}"`} />
+          <ItemGrid items={items} loading={loading} emptyLabel={`Ничего не найдено по запросу «${query}»`} />
         )}
       </main>
     </div>

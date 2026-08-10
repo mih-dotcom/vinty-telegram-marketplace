@@ -6,7 +6,7 @@ import { Sheet } from '../components/layout/Sheet'
 import { ChipSelect } from '../components/filters/ChipSelect'
 import { ProgressRing } from '../components/common/ProgressRing'
 import { createListing, uploadImage, FACETS } from '../services/api'
-import type { Category, Condition } from '../types'
+import type { Category, Condition, Gender } from '../types'
 import { telegram } from '../services/telegram'
 import { useMainButton } from '../hooks/useTelegram'
 
@@ -16,8 +16,6 @@ interface Photo {
   uploading: boolean
 }
 
-const CATEGORIES: Category[] = ['Women', 'Men', 'Kids', 'Shoes', 'Bags', 'Accessories']
-
 export function UploadScreen() {
   const navigate = useNavigate()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -26,7 +24,9 @@ export function UploadScreen() {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [gender, setGender] = useState<Gender | ''>('')
   const [category, setCategory] = useState<Category | ''>('')
+  const [subcategory, setSubcategory] = useState('')
   const [size, setSize] = useState('')
   const [brand, setBrand] = useState('')
   const [brandFocused, setBrandFocused] = useState(false)
@@ -34,14 +34,20 @@ export function UploadScreen() {
   const [price, setPrice] = useState('')
 
   const [categorySheetOpen, setCategorySheetOpen] = useState(false)
+  const [subcategorySheetOpen, setSubcategorySheetOpen] = useState(false)
   const [sizeSheetOpen, setSizeSheetOpen] = useState(false)
 
   const [submitting, setSubmitting] = useState(false)
 
+  const subcategoryOptions = category ? FACETS.subcategoriesByCategory[category] : []
+  const sizeOptions = category ? FACETS.sizesByCategory[category] : []
+
   const canSubmit =
     photos.length > 0 &&
     title.trim().length > 0 &&
+    gender !== '' &&
     category !== '' &&
+    subcategory !== '' &&
     size !== '' &&
     brand.trim().length > 0 &&
     condition !== '' &&
@@ -59,7 +65,7 @@ export function UploadScreen() {
 
     await Promise.all(
       Array.from(files).map(async (file, i) => {
-        const url = await uploadImage(file) // TODO(n8n): replace with real upload endpoint
+        const url = await uploadImage(file) // TODO(n8n): заменить на реальный upload-эндпоинт
         setPhotos((prev) =>
           prev.map((p) => (p.id === newPhotos[i].id ? { ...p, url, uploading: false } : p))
         )
@@ -90,7 +96,9 @@ export function UploadScreen() {
   const handleSubmit = async () => {
     if (!canSubmit) {
       telegram.hapticNotification('error')
-      telegram.showAlert('Please add at least one photo and fill in title, category, size, brand, condition and price.')
+      telegram.showAlert(
+        'Добавьте хотя бы одно фото и заполните название, пол, категорию, подкатегорию, размер, бренд, состояние и цену.'
+      )
       return
     }
     setSubmitting(true)
@@ -98,7 +106,9 @@ export function UploadScreen() {
       const item = await createListing({
         title: title.trim(),
         description: description.trim(),
+        gender: gender as Gender,
         category: category as Category,
+        subcategory,
         size,
         brand: brand.trim(),
         condition: condition as Condition,
@@ -109,14 +119,14 @@ export function UploadScreen() {
       navigate(`/item/${item.id}`)
     } catch {
       telegram.hapticNotification('error')
-      telegram.showAlert('Something went wrong creating your listing. Please try again.')
+      telegram.showAlert('Не удалось создать объявление. Попробуйте ещё раз.')
     } finally {
       setSubmitting(false)
     }
   }
 
-  // Wire Telegram's native MainButton to the same submit action.
-  useMainButton(submitting ? 'Uploading...' : 'Upload listing', handleSubmit, {
+  // Привязываем нативную MainButton Telegram к тому же действию отправки.
+  useMainButton(submitting ? 'Публикуем...' : 'Опубликовать объявление', handleSubmit, {
     loading: submitting,
   })
 
@@ -126,13 +136,13 @@ export function UploadScreen() {
 
   return (
     <div className="pb-40">
-      <ScreenHeader title="Sell an item" />
+      <ScreenHeader title="Продать вещь" />
 
       <div className="px-4 pt-4 flex flex-col gap-5">
-        {/* Photo uploader */}
+        {/* Фото */}
         <section>
           <h3 className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>
-            Photos
+            Фото
           </h3>
           <div className="grid grid-cols-3 gap-2.5">
             {photos.map((photo, i) => (
@@ -153,12 +163,12 @@ export function UploadScreen() {
                 )}
                 {i === 0 && !photo.uploading && (
                   <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-pill">
-                    Cover
+                    Обложка
                   </span>
                 )}
                 <button
                   onClick={() => removePhoto(photo.id)}
-                  aria-label="Remove photo"
+                  aria-label="Удалить фото"
                   className="absolute top-1 right-1 w-5 h-5 rounded-full glass-strong flex items-center justify-center press-spring"
                 >
                   <X size={11} style={{ color: 'var(--text-primary)' }} />
@@ -173,11 +183,11 @@ export function UploadScreen() {
               <button
                 onClick={() => fileInputRef.current?.click()}
                 className="aspect-square rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-1 press-spring glass"
-                style={{ borderColor: 'var(--glass-border)' }}
+                style={{ borderColor: 'var(--surface-border)' }}
               >
                 <Camera size={20} style={{ color: 'var(--text-tertiary)' }} />
                 <span className="text-[10px] font-medium" style={{ color: 'var(--text-tertiary)' }}>
-                  Add photo
+                  Добавить фото
                 </span>
               </button>
             )}
@@ -193,16 +203,16 @@ export function UploadScreen() {
           />
         </section>
 
-        {/* Title */}
+        {/* Название */}
         <section>
           <h3 className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>
-            Title
+            Название
           </h3>
           <div className="glass rounded-2xl px-4 py-3">
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Oversized denim jacket"
+              placeholder="например, оверсайз джинсовая куртка"
               maxLength={80}
               className="w-full bg-transparent outline-none text-[15px] placeholder:opacity-50"
               style={{ color: 'var(--text-primary)' }}
@@ -210,16 +220,16 @@ export function UploadScreen() {
           </div>
         </section>
 
-        {/* Description */}
+        {/* Описание */}
         <section>
           <h3 className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>
-            Description
+            Описание
           </h3>
           <div className="glass rounded-2xl px-4 py-3">
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Condition details, measurements, why you're selling..."
+              placeholder="Состояние, замеры, почему продаёте..."
               rows={4}
               className="w-full bg-transparent outline-none text-[14px] resize-none placeholder:opacity-50"
               style={{ color: 'var(--text-primary)' }}
@@ -227,10 +237,22 @@ export function UploadScreen() {
           </div>
         </section>
 
-        {/* Category */}
+        {/* Пол */}
         <section>
           <h3 className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>
-            Category
+            Пол
+          </h3>
+          <ChipSelect
+            options={FACETS.genders}
+            selected={gender ? [gender] : []}
+            onToggle={(v) => setGender(v === gender ? '' : v)}
+          />
+        </section>
+
+        {/* Категория */}
+        <section>
+          <h3 className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>
+            Категория
           </h3>
           <button
             onClick={() => setCategorySheetOpen(true)}
@@ -240,32 +262,53 @@ export function UploadScreen() {
               className="text-[15px]"
               style={{ color: category ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
             >
-              {category || 'Select category'}
+              {category || 'Выберите категорию'}
             </span>
             <ChevronRight size={18} style={{ color: 'var(--text-tertiary)' }} />
           </button>
         </section>
 
-        {/* Size */}
+        {/* Подкатегория */}
         <section>
           <h3 className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>
-            Size
+            Подкатегория
           </h3>
           <button
-            onClick={() => setSizeSheetOpen(true)}
-            className="glass rounded-2xl px-4 py-3 w-full flex items-center justify-between press-spring"
+            onClick={() => category && setSubcategorySheetOpen(true)}
+            disabled={!category}
+            className="glass rounded-2xl px-4 py-3 w-full flex items-center justify-between press-spring disabled:opacity-40"
           >
-            <span className="text-[15px]" style={{ color: size ? 'var(--text-primary)' : 'var(--text-tertiary)' }}>
-              {size || 'Select size'}
+            <span
+              className="text-[15px]"
+              style={{ color: subcategory ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
+            >
+              {subcategory || (category ? 'Выберите подкатегорию' : 'Сначала выберите категорию')}
             </span>
             <ChevronRight size={18} style={{ color: 'var(--text-tertiary)' }} />
           </button>
         </section>
 
-        {/* Brand autocomplete */}
+        {/* Размер */}
+        <section>
+          <h3 className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>
+            Размер
+          </h3>
+          <button
+            onClick={() => category && setSizeSheetOpen(true)}
+            disabled={!category}
+            className="glass rounded-2xl px-4 py-3 w-full flex items-center justify-between press-spring disabled:opacity-40"
+          >
+            <span className="text-[15px]" style={{ color: size ? 'var(--text-primary)' : 'var(--text-tertiary)' }}>
+              {size || (category ? 'Выберите размер' : 'Сначала выберите категорию')}
+            </span>
+            <ChevronRight size={18} style={{ color: 'var(--text-tertiary)' }} />
+          </button>
+        </section>
+
+        {/* Бренд с автодополнением */}
         <section className="relative">
           <h3 className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>
-            Brand
+            Бренд
           </h3>
           <div className="glass rounded-2xl px-4 py-3">
             <input
@@ -273,7 +316,7 @@ export function UploadScreen() {
               onChange={(e) => setBrand(e.target.value)}
               onFocus={() => setBrandFocused(true)}
               onBlur={() => setTimeout(() => setBrandFocused(false), 150)}
-              placeholder="e.g. Nike, Zara..."
+              placeholder="например, Nike, Zara..."
               className="w-full bg-transparent outline-none text-[15px] placeholder:opacity-50"
               style={{ color: 'var(--text-primary)' }}
             />
@@ -294,10 +337,10 @@ export function UploadScreen() {
           )}
         </section>
 
-        {/* Condition */}
+        {/* Состояние */}
         <section>
           <h3 className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>
-            Condition
+            Состояние вещи
           </h3>
           <ChipSelect
             options={FACETS.conditions}
@@ -306,35 +349,37 @@ export function UploadScreen() {
           />
         </section>
 
-        {/* Price */}
+        {/* Цена */}
         <section>
           <h3 className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>
-            Price
+            Цена
           </h3>
           <div className="glass rounded-2xl px-4 py-3 flex items-center gap-2">
-            <span className="text-[16px] font-bold" style={{ color: 'var(--color-primary-green)' }}>
-              $
-            </span>
             <input
               value={price}
-              onChange={(e) => setPrice(e.target.value.replace(/[^0-9.]/g, ''))}
-              placeholder="0.00"
-              inputMode="decimal"
+              onChange={(e) => setPrice(e.target.value.replace(/[^0-9]/g, ''))}
+              placeholder="0"
+              inputMode="numeric"
               className="w-full bg-transparent outline-none text-[15px] placeholder:opacity-50"
               style={{ color: 'var(--text-primary)' }}
             />
+            <span className="text-[16px] font-bold" style={{ color: 'var(--color-primary-green)' }}>
+              ₽
+            </span>
           </div>
         </section>
       </div>
 
-      {/* Category sheet */}
-      <Sheet open={categorySheetOpen} onClose={() => setCategorySheetOpen(false)} title="Category">
+      {/* Лист выбора категории */}
+      <Sheet open={categorySheetOpen} onClose={() => setCategorySheetOpen(false)} title="Категория">
         <div className="flex flex-col gap-2">
-          {CATEGORIES.map((c) => (
+          {FACETS.categories.map((c) => (
             <button
               key={c}
               onClick={() => {
                 setCategory(c)
+                setSubcategory('')
+                setSize('')
                 setCategorySheetOpen(false)
               }}
               className="glass rounded-2xl px-4 py-3 text-left press-spring text-[15px] font-medium"
@@ -346,10 +391,22 @@ export function UploadScreen() {
         </div>
       </Sheet>
 
-      {/* Size sheet */}
-      <Sheet open={sizeSheetOpen} onClose={() => setSizeSheetOpen(false)} title="Size">
+      {/* Лист выбора подкатегории */}
+      <Sheet open={subcategorySheetOpen} onClose={() => setSubcategorySheetOpen(false)} title="Подкатегория">
         <ChipSelect
-          options={FACETS.sizes}
+          options={subcategoryOptions}
+          selected={subcategory ? [subcategory] : []}
+          onToggle={(v) => {
+            setSubcategory(v)
+            setSubcategorySheetOpen(false)
+          }}
+        />
+      </Sheet>
+
+      {/* Лист выбора размера */}
+      <Sheet open={sizeSheetOpen} onClose={() => setSizeSheetOpen(false)} title="Размер">
+        <ChipSelect
+          options={sizeOptions}
           selected={size ? [size] : []}
           onToggle={(v) => {
             setSize(v)
@@ -358,8 +415,8 @@ export function UploadScreen() {
         />
       </Sheet>
 
-      {/* Fallback CTA for browsers outside Telegram, where MainButton isn't available.
-          Sits above the persistent bottom nav rather than replacing it. */}
+      {/* Запасная кнопка для браузеров вне Telegram, где MainButton недоступна.
+          Располагается над постоянной нижней навигацией, а не вместо неё. */}
       {!telegram.isAvailable() && (
         <div className="fixed bottom-24 left-0 right-0 flex justify-center px-4 pointer-events-none z-40">
           <div className="w-full max-w-[560px] pointer-events-auto">
@@ -369,7 +426,7 @@ export function UploadScreen() {
               className="w-full cta-gradient text-white font-bold text-[15px] rounded-pill py-3.5 press-spring shadow-glass-lg disabled:opacity-40 flex items-center justify-center gap-2"
             >
               {submitting && <ProgressRing progress={0.7} size={18} />}
-              {submitting ? 'Uploading...' : 'Upload listing'}
+              {submitting ? 'Публикуем...' : 'Опубликовать объявление'}
             </button>
           </div>
         </div>
