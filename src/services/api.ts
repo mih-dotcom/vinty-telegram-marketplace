@@ -368,10 +368,10 @@ export async function toggleFavorite(id: string): Promise<boolean> {
   }
 
   try {
-    const res = await fetch(`${n8nBaseUrl}/favorites/${encodeURIComponent(id)}/toggle`, {
+    const res = await fetch(`${n8nBaseUrl}/favorites-toggle`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ initData: rawInitData }),
+      body: JSON.stringify({ initData: rawInitData, itemId: id }),
       cache: 'no-store',
     })
     if (!res.ok) throw new Error(`favorites toggle webhook returned ${res.status}`)
