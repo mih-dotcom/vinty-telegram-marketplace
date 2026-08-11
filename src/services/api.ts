@@ -268,7 +268,7 @@ export async function getItemById(id: string): Promise<Item | undefined> {
   }
 
   try {
-    const res = await fetch(`${n8nBaseUrl}/items/${encodeURIComponent(id)}`, { cache: 'no-store' })
+    const res = await fetch(`${n8nBaseUrl}/product-detail/${encodeURIComponent(id)}`, { cache: 'no-store' })
     if (!res.ok) throw new Error(`item detail webhook returned ${res.status}`)
     const data = (await res.json()) as (Item & { notFound?: boolean }) | { notFound: true }
     if ('notFound' in data && data.notFound) return undefined
