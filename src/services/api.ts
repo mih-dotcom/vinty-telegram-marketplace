@@ -104,6 +104,7 @@ export async function getCurrentUser(): Promise<User> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ initData: rawInitData }),
+      cache: 'no-store',
     })
     if (!res.ok) throw new Error(`identify webhook returned ${res.status}`)
     const data = (await res.json()) as User
@@ -146,7 +147,7 @@ export async function getItems(filters: ItemFilters = {}): Promise<PaginatedResu
     if (filters.page) params.set('page', String(filters.page))
     if (filters.pageSize) params.set('pageSize', String(filters.pageSize))
 
-    const res = await fetch(`${n8nBaseUrl}/items?${params.toString()}`)
+    const res = await fetch(`${n8nBaseUrl}/items?${params.toString()}`, { cache: 'no-store' })
     if (!res.ok) throw new Error(`items webhook returned ${res.status}`)
     const data = (await res.json()) as PaginatedResult<Item>
     // Guard against a webhook that isn't wired up correctly yet (wrong shape,
@@ -267,7 +268,7 @@ export async function getItemById(id: string): Promise<Item | undefined> {
   }
 
   try {
-    const res = await fetch(`${n8nBaseUrl}/items/${encodeURIComponent(id)}`)
+    const res = await fetch(`${n8nBaseUrl}/items/${encodeURIComponent(id)}`, { cache: 'no-store' })
     if (!res.ok) throw new Error(`item detail webhook returned ${res.status}`)
     const data = (await res.json()) as (Item & { notFound?: boolean }) | { notFound: true }
     if ('notFound' in data && data.notFound) return undefined
@@ -308,6 +309,7 @@ export async function createListing(data: CreateListingInput): Promise<Item> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ initData: rawInitData, item: data }),
+      cache: 'no-store',
     })
     if (!res.ok) throw new Error(`listings webhook returned ${res.status}`)
     const created = (await res.json()) as Item
@@ -370,6 +372,7 @@ export async function toggleFavorite(id: string): Promise<boolean> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ initData: rawInitData }),
+      cache: 'no-store',
     })
     if (!res.ok) throw new Error(`favorites toggle webhook returned ${res.status}`)
     const data = (await res.json()) as { favorited: boolean }
