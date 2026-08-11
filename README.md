@@ -87,7 +87,7 @@ already `async` and returns the same typed shape a real endpoint would:
 
 To wire up n8n: add a `VITE_N8N_BASE_URL` env var, replace each function body
 with a `fetch()` call to `${VITE_N8N_BASE_URL}/<route>`, and keep the return
-types identical. No component or screen needs to change.
+types identical. No component or screen needs to change
 
 ## Notes on this prototype
 
@@ -102,4 +102,4 @@ types identical. No component or screen needs to change.
   are intentionally non-functional placeholders (a Telegram `showAlert`
   explains this) — payment/messaging integration comes later.
 - **Images**: sample photos are placeholder images from picsum.photos /
-  pravatar.cc, seeded deterministically per item/user.
+  pravatar.cc, seeded deterministically per item/user
