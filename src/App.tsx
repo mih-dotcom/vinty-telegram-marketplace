@@ -9,6 +9,7 @@ import { CharityScreen } from './screens/CharityScreen'
 import { ProfileScreen } from './screens/ProfileScreen'
 import { ItemDetailScreen } from './screens/ItemDetailScreen'
 import { SubscriptionsScreen } from './screens/SubscriptionsScreen'
+import { GuidedTour } from './components/onboarding/GuidedTour'
 import { telegram } from './services/telegram'
 
 function ScrollToTop() {
@@ -43,6 +44,7 @@ function AppRoutes() {
     <>
       <ForceHomeOnLaunch />
       <ScrollToTop />
+      <GuidedTour />
       <Routes>
         <Route path="/" element={<FeedScreen />} />
         <Route path="/search" element={<SearchScreen />} />
