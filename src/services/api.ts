@@ -21,9 +21,11 @@ import type {
   CharityOrg,
   Category,
   CreateListingInput,
+  Gender,
   Item,
   ItemFilters,
   PaginatedResult,
+  Subscription,
   User,
 } from '../types'
 import { mockItems } from '../data/mockItems'
@@ -716,4 +718,82 @@ export const FACETS = {
 
   minPrice: 1000,
   maxPrice: 500000,
+}
+
+// ---------------------------------------------------------------------------
+// Subscriptions — "notify me" saved filters, matched every few days by a
+// scheduled n8n workflow against newly created listings. No local mock
+// fallback here (there's nothing meaningful to fall back to — a fake local
+// "subscription" can never actually trigger a real notification), so these
+// simply surface the error to the caller if the backend isn't reachable.
+// ---------------------------------------------------------------------------
+
+export async function getSubscriptions(): Promise<Subscription[]> {
+  const n8nBaseUrl = import.meta.env.VITE_N8N_BASE_URL as string | undefined
+  const rawInitData = telegram.getRawInitData()
+
+  if (!n8nBaseUrl || !rawInitData) return []
+
+  try {
+    const res = await fetch(`${n8nBaseUrl}/subscriptions?initData=${encodeURIComponent(rawInitData)}`, {
+      cache: 'no-store',
+    })
+    if (!res.ok) throw new Error(`subscriptions webhook returned ${res.status}`)
+    const data = (await res.json()) as { subscriptions: Subscription[] }
+    if (!data || !Array.isArray(data.subscriptions)) {
+      throw new Error('subscriptions webhook returned an unexpected shape (missing subscriptions[])')
+    }
+    return data.subscriptions
+  } catch (err) {
+    console.error('getSubscriptions: returning empty list —', err)
+    return []
+  }
+}
+
+export async function subscribe(filters: {
+  category?: Category | null
+  gender?: Gender | null
+  size?: string | null
+}): Promise<Subscription> {
+  const n8nBaseUrl = import.meta.env.VITE_N8N_BASE_URL as string | undefined
+  const rawInitData = telegram.getRawInitData()
+
+  if (!n8nBaseUrl || !rawInitData) {
+    throw new Error('Backend not configured — subscribe requires a real Telegram session')
+  }
+
+  const res = await fetch(`${n8nBaseUrl}/subscribe`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      initData: rawInitData,
+      category: filters.category ?? null,
+      gender: filters.gender ?? null,
+      size: filters.size ?? null,
+    }),
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(`subscribe webhook returned ${res.status}`)
+  const data = (await res.json()) as Subscription
+  if (!data || typeof data.id !== 'string') {
+    throw new Error('subscribe webhook returned an unexpected shape (missing id)')
+  }
+  return data
+}
+
+export async function unsubscribe(subscriptionId: string): Promise<void> {
+  const n8nBaseUrl = import.meta.env.VITE_N8N_BASE_URL as string | undefined
+  const rawInitData = telegram.getRawInitData()
+
+  if (!n8nBaseUrl || !rawInitData) {
+    throw new Error('Backend not configured — unsubscribe requires a real Telegram session')
+  }
+
+  const res = await fetch(`${n8nBaseUrl}/unsubscribe`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ initData: rawInitData, subscriptionId }),
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(`unsubscribe webhook returned ${res.status}`)
 }

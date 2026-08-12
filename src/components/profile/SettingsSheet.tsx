@@ -1,10 +1,20 @@
 import { Bell, ChevronRight, CreditCard, LogOut } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { Sheet } from '../layout/Sheet'
 import { telegram } from '../../services/telegram'
 
 export function SettingsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const navigate = useNavigate()
+
   const rows = [
-    { icon: Bell, label: 'Уведомления', action: () => telegram.showAlert('Настройки уведомлений скоро появятся.') },
+    {
+      icon: Bell,
+      label: 'Уведомления',
+      action: () => {
+        onClose()
+        navigate('/subscriptions')
+      },
+    },
     {
       icon: CreditCard,
       label: 'Оплата и доставка',

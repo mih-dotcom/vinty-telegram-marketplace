@@ -106,3 +106,12 @@ export interface CharityOrg {
   acceptedItems: string[]
   websiteUrl?: string
 }
+
+// A saved "notify me" filter — the periodic digest matches new listings
+// against these. `null` on any field means "any" (no filter on that field).
+export interface Subscription {
+  id: string
+  category: Category | null
+  gender: Gender | null
+  size: string | null
+}

@@ -8,6 +8,7 @@ import { UploadScreen } from './screens/UploadScreen'
 import { CharityScreen } from './screens/CharityScreen'
 import { ProfileScreen } from './screens/ProfileScreen'
 import { ItemDetailScreen } from './screens/ItemDetailScreen'
+import { SubscriptionsScreen } from './screens/SubscriptionsScreen'
 import { telegram } from './services/telegram'
 
 function ScrollToTop() {
@@ -23,7 +24,7 @@ function AppRoutes() {
   // Item detail has its own sticky "Message seller / Buy now" action bar and a
   // Telegram BackButton for navigation, so the tab bar steps aside there —
   // mirrors how Vinted/Depop hide the main tab bar on push-navigated screens.
-  const showBottomNav = !pathname.startsWith('/item/')
+  const showBottomNav = !pathname.startsWith('/item/') && pathname !== '/subscriptions'
 
   return (
     <>
@@ -35,6 +36,7 @@ function AppRoutes() {
         <Route path="/charity" element={<CharityScreen />} />
         <Route path="/profile" element={<ProfileScreen />} />
         <Route path="/item/:id" element={<ItemDetailScreen />} />
+        <Route path="/subscriptions" element={<SubscriptionsScreen />} />
       </Routes>
       {showBottomNav && <BottomNav />}
     </>
