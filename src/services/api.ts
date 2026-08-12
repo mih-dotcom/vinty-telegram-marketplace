@@ -502,15 +502,37 @@ export async function getCharities(): Promise<CharityOrg[]> {
 }
 
 // ---------------------------------------------------------------------------
-// uploadImage — TODO(n8n): point this at a real upload webhook.
-//
-// For the prototype, we just turn the picked File into a local object URL so
-// it can be previewed/stored immediately with zero backend. Swap the body
-// for a multipart POST to n8n which would return a permanent hosted URL.
+// uploadImage — uploads directly to Cloudinary using an unsigned preset, so
+// no backend round-trip is needed for the file bytes themselves. Returns
+// the permanent hosted URL (secure_url) to store on the item. Falls back to
+// a local object URL (temporary, browser-only) if the upload fails, so the
+// Upload screen still works for a quick local preview even if Cloudinary is
+// unreachable — but a fallback item's photo won't survive a reload/won't
+// show for other users, so failures are logged loudly.
 // ---------------------------------------------------------------------------
+const CLOUDINARY_CLOUD_NAME = 'aqwuexfd'
+const CLOUDINARY_UPLOAD_PRESET = 'platform_unsigned'
+
 export async function uploadImage(file: File): Promise<string> {
-  await wait(300) // simulate upload latency
-  return URL.createObjectURL(file)
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET)
+
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+      method: 'POST',
+      body: formData,
+    })
+    if (!res.ok) throw new Error(`Cloudinary upload returned ${res.status}`)
+    const data = (await res.json()) as { secure_url: string }
+    if (!data || typeof data.secure_url !== 'string') {
+      throw new Error('Cloudinary upload returned an unexpected shape (missing secure_url)')
+    }
+    return data.secure_url
+  } catch (err) {
+    console.error('uploadImage: Cloudinary upload failed, using a temporary local preview URL —', err)
+    return URL.createObjectURL(file)
+  }
 }
 
 // ---------------------------------------------------------------------------
