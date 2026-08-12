@@ -1,10 +1,15 @@
 export interface TourStep {
-  route: string
+  /** Static route — used for most steps. */
+  route?: string
+  /** For steps that need a real record to navigate to (e.g. an item
+   * detail page) — resolves the route at tour-time, or null to skip
+   * this step entirely (e.g. no items exist yet). */
+  resolveRoute?: () => Promise<string | null>
   title: string
   description: string
 }
 
-// Each step navigates the real app to `route` while an explanatory card
+// Each step navigates the real app to its route while an explanatory card
 // floats above it — an actual guided tour through the real screens, not a
 // static slideshow. Keep this list in sync with real navigation targets.
 export const TOUR_STEPS: TourStep[] = [
@@ -12,7 +17,17 @@ export const TOUR_STEPS: TourStep[] = [
     route: '/',
     title: 'Добро пожаловать 👋',
     description:
-      'Это лента — здесь вся одежда, которую продают соседи по посёлку. Листайте вещи, переключайте категории сверху и пользуйтесь быстрыми фильтрами вроде «Новое» и «Недорого».',
+      'Это лента — здесь вся одежда, которую продают люди рядом с вами. Листайте вещи, переключайте категории сверху и пользуйтесь быстрыми фильтрами вроде «Новое» и «Недорого».',
+  },
+  {
+    resolveRoute: async () => {
+      const { getItems } = await import('../services/api')
+      const res = await getItems({ pageSize: 1 })
+      return res.items[0] ? `/item/${res.items[0].id}` : null
+    },
+    title: 'Карточка товара',
+    description:
+      'Откройте вещь, чтобы увидеть все фото и подробности. Кнопка «Написать продавцу» откроет настоящую переписку прямо в Telegram — там и договаривайтесь о встрече и цене.',
   },
   {
     route: '/search',

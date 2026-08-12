@@ -9,14 +9,31 @@ export function GuidedTour() {
   const [active, setActive] = useState(false)
   const [stepIndex, setStepIndex] = useState(0)
 
+  // Resolves a step's route (static or dynamic) and navigates to it.
+  // Steps whose dynamic route resolves to null (e.g. no items exist yet
+  // for the item-detail step) are skipped automatically.
+  const goToStep = async (index: number) => {
+    let i = index
+    while (i < TOUR_STEPS.length) {
+      const step = TOUR_STEPS[i]
+      const route = step.route ?? (step.resolveRoute ? await step.resolveRoute() : null)
+      if (route) {
+        setStepIndex(i)
+        navigate(route)
+        return
+      }
+      i += 1
+    }
+    finish()
+  }
+
   // Start the tour once, on the very first launch — after the app's own
   // "force home on launch" redirect has already settled.
   useEffect(() => {
     const seen = localStorage.getItem(SEEN_KEY)
     if (!seen) {
       setActive(true)
-      setStepIndex(0)
-      navigate(TOUR_STEPS[0].route)
+      goToStep(0)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -28,13 +45,7 @@ export function GuidedTour() {
   }
 
   const handleContinue = () => {
-    const next = stepIndex + 1
-    if (next >= TOUR_STEPS.length) {
-      finish()
-      return
-    }
-    setStepIndex(next)
-    navigate(TOUR_STEPS[next].route)
+    goToStep(stepIndex + 1)
   }
 
   if (!active) return null
