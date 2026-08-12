@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState, type DragEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Camera, ChevronRight, GripVertical, X } from 'lucide-react'
 import { ScreenHeader } from '../components/layout/ScreenHeader'
 import { Sheet } from '../components/layout/Sheet'
 import { ChipSelect } from '../components/filters/ChipSelect'
-import { ProgressRing } from '../components/common/ProgressRing'
-import { createListing, uploadImage, searchBrands, FACETS } from '../services/api'
+import { ProgressRing, Spinner } from '../components/common/ProgressRing'
+import { createListing, updateListing, getItemById, uploadImage, searchBrands, FACETS } from '../services/api'
 import type { Category, Condition, Gender } from '../types'
 import { telegram } from '../services/telegram'
 import { useMainButton } from '../hooks/useTelegram'
+import { useApp } from '../context/AppContext'
 
 interface Photo {
   id: string
@@ -18,6 +19,9 @@ interface Photo {
 
 export function UploadScreen() {
   const navigate = useNavigate()
+  const { id: editId } = useParams<{ id: string }>()
+  const isEditMode = !!editId
+  const { currentUser } = useApp()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const dragIndex = useRef<number | null>(null)
 
@@ -38,6 +42,41 @@ export function UploadScreen() {
   const [sizeSheetOpen, setSizeSheetOpen] = useState(false)
 
   const [submitting, setSubmitting] = useState(false)
+  const [loadingExisting, setLoadingExisting] = useState(isEditMode)
+
+  // В режиме редактирования подтягиваем текущие данные объявления.
+  useEffect(() => {
+    if (!editId) return
+    let cancelled = false
+    getItemById(editId).then((found) => {
+      if (cancelled) return
+      if (!found) {
+        telegram.showAlert('Объявление не найдено.')
+        navigate(-1)
+        return
+      }
+      if (!currentUser || found.sellerId !== currentUser.id) {
+        telegram.showAlert('Редактировать можно только собственные объявления.')
+        navigate(-1)
+        return
+      }
+      setTitle(found.title)
+      setDescription(found.description)
+      setGender(found.gender)
+      setCategory(found.category)
+      setSubcategory(found.subcategory)
+      setSize(found.size)
+      setBrand(found.brand)
+      setCondition(found.condition)
+      setPrice(String(found.price))
+      setPhotos(found.images.map((url, i) => ({ id: `existing-${i}`, url, uploading: false })))
+      setLoadingExisting(false)
+    })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId, currentUser])
 
   const subcategoryOptions = category ? FACETS.subcategoriesByCategory[category] : []
   const sizeOptions = category ? FACETS.sizesByCategory[category] : []
@@ -103,7 +142,7 @@ export function UploadScreen() {
     }
     setSubmitting(true)
     try {
-      const item = await createListing({
+      const data = {
         title: title.trim(),
         description: description.trim(),
         gender: gender as Gender,
@@ -114,21 +153,26 @@ export function UploadScreen() {
         condition: condition as Condition,
         price: Number(price),
         images: photos.filter((p) => p.url).map((p) => p.url),
-      })
+      }
+      const item = isEditMode ? await updateListing(editId!, data) : await createListing(data)
       telegram.hapticNotification('success')
-      navigate(`/item/${item.id}`)
+      navigate(`/item/${item.id}`, { replace: isEditMode })
     } catch {
       telegram.hapticNotification('error')
-      telegram.showAlert('Не удалось создать объявление. Попробуйте ещё раз.')
+      telegram.showAlert(
+        isEditMode ? 'Не удалось сохранить изменения. Попробуйте ещё раз.' : 'Не удалось создать объявление. Попробуйте ещё раз.'
+      )
     } finally {
       setSubmitting(false)
     }
   }
 
   // Привязываем нативную MainButton Telegram к тому же действию отправки.
-  useMainButton(submitting ? 'Публикуем...' : 'Опубликовать объявление', handleSubmit, {
-    loading: submitting,
-  })
+  useMainButton(
+    submitting ? (isEditMode ? 'Сохраняем...' : 'Публикуем...') : isEditMode ? 'Сохранить изменения' : 'Опубликовать объявление',
+    handleSubmit,
+    { loading: submitting }
+  )
 
   const [brandResults, setBrandResults] = useState<string[]>([])
   useEffect(() => {
@@ -145,9 +189,17 @@ export function UploadScreen() {
   }, [brand])
   const filteredBrands = brandResults
 
+  if (loadingExisting) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Spinner size={28} />
+      </div>
+    )
+  }
+
   return (
     <div className="pb-40">
-      <ScreenHeader title="Продать вещь" />
+      <ScreenHeader title={isEditMode ? 'Редактировать объявление' : 'Продать вещь'} />
 
       <div className="px-4 pt-4 flex flex-col gap-5">
         {/* Фото */}
@@ -207,7 +259,6 @@ export function UploadScreen() {
             ref={fileInputRef}
             type="file"
             accept="image/*"
-            capture="environment"
             multiple
             className="hidden"
             onChange={(e) => handleFiles(e.target.files)}
@@ -437,7 +488,7 @@ export function UploadScreen() {
               className="w-full cta-gradient text-white font-bold text-[15px] rounded-pill py-3.5 press-spring shadow-glass-lg disabled:opacity-40 flex items-center justify-center gap-2"
             >
               {submitting && <ProgressRing progress={0.7} size={18} />}
-              {submitting ? 'Публикуем...' : 'Опубликовать объявление'}
+              {submitting ? (isEditMode ? 'Сохраняем...' : 'Публикуем...') : isEditMode ? 'Сохранить изменения' : 'Опубликовать объявление'}
             </button>
           </div>
         </div>

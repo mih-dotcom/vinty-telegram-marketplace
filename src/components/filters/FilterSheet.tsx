@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { Sheet } from '../layout/Sheet'
 import { PriceRangeSlider } from './PriceRangeSlider'
 import { ChipSelect } from './ChipSelect'
-import { ColorSwatches } from './ColorSwatches'
 import { FACETS, searchBrands } from '../../services/api'
 import type { Category, Condition, Gender, ItemFilters } from '../../types'
 
@@ -208,13 +207,6 @@ export function FilterSheet({
             style={{ color: 'var(--text-primary)' }}
           />
           <ChipSelect options={filteredBrands} selected={draft.brands} onToggle={(v) => toggle('brands', v)} />
-        </section>
-
-        <section>
-          <h3 className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>
-            Цвет
-          </h3>
-          <ColorSwatches selected={draft.colors} onToggle={(v) => toggle('colors', v)} />
         </section>
 
         <section>

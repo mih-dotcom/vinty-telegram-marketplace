@@ -37,7 +37,7 @@ function AppRoutes() {
   // Item detail has its own sticky "Message seller / Buy now" action bar and a
   // Telegram BackButton for navigation, so the tab bar steps aside there —
   // mirrors how Vinted/Depop hide the main tab bar on push-navigated screens.
-  const showBottomNav = !pathname.startsWith('/item/') && pathname !== '/subscriptions'
+  const showBottomNav = !pathname.startsWith('/item/') && pathname !== '/subscriptions' && !pathname.startsWith('/edit/')
 
   return (
     <>
@@ -47,6 +47,7 @@ function AppRoutes() {
         <Route path="/" element={<FeedScreen />} />
         <Route path="/search" element={<SearchScreen />} />
         <Route path="/sell" element={<UploadScreen />} />
+        <Route path="/edit/:id" element={<UploadScreen />} />
         <Route path="/charity" element={<CharityScreen />} />
         <Route path="/profile" element={<ProfileScreen />} />
         <Route path="/item/:id" element={<ItemDetailScreen />} />

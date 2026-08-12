@@ -478,12 +478,37 @@ export async function getFavoriteItems(): Promise<Item[]> {
 
 // ---------------------------------------------------------------------------
 // getItemsBySeller — used by the Profile "My Listings" / "Sold" tabs.
+//
+// GETs {N8N_BASE_URL}/items-by-seller?sellerId=. Falls back to the local mock
+// store if VITE_N8N_BASE_URL isn't set or the request fails.
 // ---------------------------------------------------------------------------
 export async function getItemsBySeller(sellerId: string): Promise<Item[]> {
-  await wait(300)
-  return store.items
-    .filter((i) => i.sellerId === sellerId)
-    .map((i) => ({ ...i, favorited: store.favoriteIds.includes(i.id) }))
+  const n8nBaseUrl = import.meta.env.VITE_N8N_BASE_URL as string | undefined
+
+  if (!n8nBaseUrl) {
+    await wait(300)
+    return store.items
+      .filter((i) => i.sellerId === sellerId)
+      .map((i) => ({ ...i, favorited: store.favoriteIds.includes(i.id) }))
+  }
+
+  try {
+    const [res, favoritedIds] = await Promise.all([
+      fetch(`${n8nBaseUrl}/items-by-seller?sellerId=${encodeURIComponent(sellerId)}`, { cache: 'no-store' }),
+      getFavoritedIds(),
+    ])
+    if (!res.ok) throw new Error(`items-by-seller webhook returned ${res.status}`)
+    const data = (await res.json()) as { items: Item[] }
+    if (!data || !Array.isArray(data.items)) {
+      throw new Error('items-by-seller webhook returned an unexpected shape (missing items[])')
+    }
+    return data.items.map((i) => ({ ...i, favorited: favoritedIds.has(i.id) }))
+  } catch (err) {
+    console.error('getItemsBySeller: falling back to local mock data —', err)
+    return store.items
+      .filter((i) => i.sellerId === sellerId)
+      .map((i) => ({ ...i, favorited: store.favoriteIds.includes(i.id) }))
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -596,10 +621,68 @@ export async function deleteListing(id: string): Promise<void> {
 // markAsSold — toggle sold state on one of the current user's own items.
 // ---------------------------------------------------------------------------
 export async function markAsSold(id: string, sold = true): Promise<void> {
-  await wait(200)
-  const item = store.items.find((i) => i.id === id)
-  if (item) item.sold = sold
-  saveStore(store)
+  const n8nBaseUrl = import.meta.env.VITE_N8N_BASE_URL as string | undefined
+  const rawInitData = telegram.getRawInitData()
+
+  if (!n8nBaseUrl || !rawInitData) {
+    await wait(200)
+    const item = store.items.find((i) => i.id === id)
+    if (item) item.sold = sold
+    saveStore(store)
+    return
+  }
+
+  const res = await fetch(`${n8nBaseUrl}/mark-sold`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ initData: rawInitData, itemId: id, sold }),
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(`mark-sold webhook returned ${res.status}`)
+}
+
+// ---------------------------------------------------------------------------
+// updateListing — edit an existing item. Server-side (n8n) enforces that
+// only the item's own seller may edit it (unlike delete, admins can't edit
+// someone else's listing content — that's a moderation vs. authorship
+// distinction).
+// ---------------------------------------------------------------------------
+export async function updateListing(id: string, data: CreateListingInput): Promise<Item> {
+  const n8nBaseUrl = import.meta.env.VITE_N8N_BASE_URL as string | undefined
+  const rawInitData = telegram.getRawInitData()
+
+  if (!n8nBaseUrl || !rawInitData) {
+    const item = store.items.find((i) => i.id === id)
+    if (!item) throw new Error('Item not found')
+    Object.assign(item, {
+      title: data.title,
+      description: data.description,
+      category: data.category,
+      subcategory: data.subcategory,
+      gender: data.gender,
+      size: data.size,
+      brand: data.brand,
+      condition: data.condition,
+      color: data.color,
+      price: data.price,
+      images: data.images.length ? data.images : item.images,
+    })
+    saveStore(store)
+    return item
+  }
+
+  const res = await fetch(`${n8nBaseUrl}/edit-listing`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ initData: rawInitData, itemId: id, item: data }),
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(`edit-listing webhook returned ${res.status}`)
+  const updated = (await res.json()) as Item
+  if (!updated || typeof updated.id !== 'string') {
+    throw new Error('edit-listing webhook returned an unexpected shape (missing id)')
+  }
+  return updated
 }
 
 // Known filter facets, surfaced for building the filter sheet UI.

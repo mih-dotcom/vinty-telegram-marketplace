@@ -1,15 +1,24 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ChevronLeft, Heart, Share2, Trash2 } from 'lucide-react'
-import { deleteListing, getItemById, getUserProfile } from '../services/api'
+import { ChevronLeft, Heart, Pencil, Trash2 } from 'lucide-react'
+import { deleteListing, getItemById, getUserProfile, markAsSold } from '../services/api'
 import type { Item, User } from '../types'
 import { ConditionBadge, InfoChip } from '../components/common/ConditionBadge'
 import { Avatar } from '../components/common/Avatar'
 import { Spinner } from '../components/common/ProgressRing'
+import { Sheet } from '../components/layout/Sheet'
 import { useApp } from '../context/AppContext'
 import { useBackButton } from '../hooks/useTelegram'
 import { telegram } from '../services/telegram'
 import { formatPrice, timeAgo } from '../utils/format'
+
+// Overlay buttons sit on top of the item's own photo, whose colors are
+// unpredictable (could be a white product shot) — so they use a fixed dark
+// scrim instead of the theme-dependent "glass" class, which can otherwise
+// wash out to near-invisible against a light photo or light app theme.
+const overlayBtnClass =
+  'w-10 h-10 rounded-full flex items-center justify-center press-spring backdrop-blur-md'
+const overlayBtnStyle = { background: 'rgba(0,0,0,0.4)' }
 
 export function ItemDetailScreen() {
   const { id } = useParams<{ id: string }>()
@@ -20,21 +29,40 @@ export function ItemDetailScreen() {
   const [seller, setSeller] = useState<User | null>(null)
   const [photoIndex, setPhotoIndex] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [deleting, setDeleting] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [actionsOpen, setActionsOpen] = useState(false)
 
   useBackButton(() => navigate(-1))
 
-  const canDelete = !!item && (isAdmin || (!!currentUser && item.sellerId === currentUser.id))
+  const isOwner = !!item && !!currentUser && item.sellerId === currentUser.id
+  const canManage = !!item && (isAdmin || isOwner)
+
+  const handleMarkSold = async () => {
+    if (!item) return
+    setActionsOpen(false)
+    setBusy(true)
+    try {
+      await markAsSold(item.id, !item.sold)
+      telegram.hapticNotification('success')
+      setItem((prev) => (prev ? { ...prev, sold: !prev.sold } : prev))
+    } catch (err) {
+      console.error('Failed to update sold status —', err)
+      telegram.showAlert('Не удалось обновить статус. Попробуйте ещё раз.')
+    } finally {
+      setBusy(false)
+    }
+  }
 
   const handleDelete = async () => {
     if (!item) return
+    setActionsOpen(false)
     const confirmed = await telegram.showConfirm(
-      isAdmin && item.sellerId !== currentUser?.id
-        ? `Удалить это объявление как администратор? Это действие необратимо.`
+      isAdmin && !isOwner
+        ? 'Удалить это объявление как администратор? Это действие необратимо.'
         : 'Удалить это объявление? Это действие необратимо.'
     )
     if (!confirmed) return
-    setDeleting(true)
+    setBusy(true)
     try {
       await deleteListing(item.id)
       telegram.hapticNotification('success')
@@ -43,7 +71,7 @@ export function ItemDetailScreen() {
       console.error('Failed to delete listing —', err)
       telegram.showAlert('Не удалось удалить объявление. Попробуйте ещё раз.')
     } finally {
-      setDeleting(false)
+      setBusy(false)
     }
   }
 
@@ -98,32 +126,38 @@ export function ItemDetailScreen() {
           <button
             onClick={() => navigate(-1)}
             aria-label="Назад"
-            className="w-10 h-10 rounded-full glass flex items-center justify-center press-spring"
+            className={overlayBtnClass}
+            style={overlayBtnStyle}
           >
             <ChevronLeft size={22} className="text-white" />
           </button>
           <div className="flex items-center gap-2">
-            {canDelete && (
+            {isOwner && (
               <button
-                onClick={handleDelete}
-                disabled={deleting}
-                aria-label="Удалить объявление"
-                className="w-10 h-10 rounded-full glass flex items-center justify-center press-spring disabled:opacity-50"
+                onClick={() => navigate(`/edit/${item.id}`)}
+                aria-label="Редактировать объявление"
+                className={overlayBtnClass}
+                style={overlayBtnStyle}
+              >
+                <Pencil size={17} className="text-white" />
+              </button>
+            )}
+            {canManage && (
+              <button
+                onClick={() => setActionsOpen(true)}
+                disabled={busy}
+                aria-label="Управление объявлением"
+                className={`${overlayBtnClass} disabled:opacity-50`}
+                style={overlayBtnStyle}
               >
                 <Trash2 size={18} className="text-white" />
               </button>
             )}
             <button
-              onClick={() => telegram.showAlert('Функция «поделиться» пока не подключена.')}
-              aria-label="Поделиться"
-              className="w-10 h-10 rounded-full glass flex items-center justify-center press-spring"
-            >
-              <Share2 size={18} className="text-white" />
-            </button>
-            <button
               onClick={() => toggleFavorite(item)}
               aria-label="В избранное"
-              className="w-10 h-10 rounded-full glass flex items-center justify-center press-spring"
+              className={overlayBtnClass}
+              style={overlayBtnStyle}
             >
               <Heart
                 size={18}
@@ -140,7 +174,7 @@ export function ItemDetailScreen() {
                 key={i}
                 onClick={() => setPhotoIndex(i)}
                 aria-label={`Фото ${i + 1}`}
-                className="glass rounded-full transition-all"
+                className="rounded-full transition-all backdrop-blur-md"
                 style={{
                   width: i === photoIndex ? 18 : 6,
                   height: 6,
@@ -234,6 +268,24 @@ export function ItemDetailScreen() {
           </button>
         </div>
       </div>
+
+      <Sheet open={actionsOpen} onClose={() => setActionsOpen(false)} title={item.title}>
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={handleMarkSold}
+            className="glass rounded-2xl px-4 py-3.5 text-left press-spring text-[14.5px] font-medium"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            {item.sold ? 'Вернуть в продажу' : 'Отметить проданным'}
+          </button>
+          <button
+            onClick={handleDelete}
+            className="glass rounded-2xl px-4 py-3.5 text-left press-spring text-[14.5px] font-medium text-red-400"
+          >
+            Удалить объявление
+          </button>
+        </div>
+      </Sheet>
     </div>
   )
 }

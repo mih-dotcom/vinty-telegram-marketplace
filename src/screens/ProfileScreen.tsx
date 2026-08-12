@@ -21,7 +21,8 @@ export function ProfileScreen() {
   const navigate = useNavigate()
   const { currentUser, loadingUser } = useApp()
   const [tab, setTab] = useState<Tab>('Мои объявления')
-  const [items, setItems] = useState<Item[]>([])
+  const [allMine, setAllMine] = useState<Item[]>([])
+  const [favorites, setFavorites] = useState<Item[]>([])
   const [loading, setLoading] = useState(true)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [menuItem, setMenuItem] = useState<Item | null>(null)
@@ -29,26 +30,34 @@ export function ProfileScreen() {
   const load = useCallback(async () => {
     if (!currentUser) return
     setLoading(true)
-    if (tab === 'Избранное') {
-      setItems(await getFavoriteItems())
-    } else if (tab === 'Мои объявления') {
-      const mine = await getItemsBySeller(currentUser.id)
-      setItems(mine.filter((i) => !i.sold))
-    } else {
-      const mine = await getItemsBySeller(currentUser.id)
-      setItems(mine.filter((i) => i.sold))
-    }
+    const [mine, favs] = await Promise.all([
+      getItemsBySeller(currentUser.id),
+      getFavoriteItems(),
+    ])
+    setAllMine(mine)
+    setFavorites(favs)
     setLoading(false)
-  }, [tab, currentUser])
+  }, [currentUser])
 
   useEffect(() => {
     load()
   }, [load])
 
+  const listedCount = allMine.filter((i) => !i.sold).length
+  const soldCount = allMine.filter((i) => i.sold).length
+
+  const items =
+    tab === 'Избранное' ? favorites : tab === 'Мои объявления' ? allMine.filter((i) => !i.sold) : allMine.filter((i) => i.sold)
+
   const handleMarkSold = async (item: Item) => {
-    await markAsSold(item.id, !item.sold)
-    setMenuItem(null)
-    load()
+    try {
+      await markAsSold(item.id, !item.sold)
+      setMenuItem(null)
+      load()
+    } catch (err) {
+      console.error('Failed to update sold status —', err)
+      telegram.showAlert('Не удалось обновить статус. Попробуйте ещё раз.')
+    }
   }
 
   const handleDelete = async (item: Item) => {
@@ -102,20 +111,11 @@ export function ProfileScreen() {
           </div>
         </div>
 
-        <div className="flex gap-4 text-[13px]" style={{ color: 'var(--text-secondary)' }}>
-          <span>
-            <b style={{ color: 'var(--text-primary)' }}>{currentUser.followers}</b> подписчиков
-          </span>
-          <span>
-            <b style={{ color: 'var(--text-primary)' }}>{currentUser.following}</b> подписок
-          </span>
-        </div>
-
-        {/* Карточка статистики */}
+        {/* Карточка статистики — из реальных объявлений, не заглушка */}
         <GlassCard className="px-4 py-4 grid grid-cols-3 text-center gap-2">
           <div>
             <p className="text-[18px] font-bold" style={{ color: 'var(--text-primary)' }}>
-              {currentUser.itemsSold}
+              {soldCount}
             </p>
             <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
               Продано
@@ -123,7 +123,7 @@ export function ProfileScreen() {
           </div>
           <div>
             <p className="text-[18px] font-bold" style={{ color: 'var(--text-primary)' }}>
-              {currentUser.itemsListed}
+              {listedCount}
             </p>
             <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
               Выставлено
