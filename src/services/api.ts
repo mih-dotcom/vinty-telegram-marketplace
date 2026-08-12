@@ -11,9 +11,9 @@
 // Suggested future wiring (all via env vars, e.g. VITE_N8N_BASE_URL):
 //   getCurrentUser()   -> POST {N8N_BASE_URL}/identify        { initData }
 //   getItems(filters)  -> GET  {N8N_BASE_URL}/items?...       filters as query
-//   getItemById(id)    -> GET  {N8N_BASE_URL}/items/:id
+//   getItemById(id)    -> GET  {N8N_BASE_URL}/item-detail?id=
 //   createListing(data)-> POST {N8N_BASE_URL}/listings        data as JSON body
-//   toggleFavorite(id) -> POST {N8N_BASE_URL}/favorites/:id/toggle
+//   toggleFavorite(id) -> POST {N8N_BASE_URL}/favorites-toggle
 //   uploadImage(file)  -> POST {N8N_BASE_URL}/upload          multipart/form-data
 // ─────────────────────────────────────────────────────────────────────────
 
@@ -119,6 +119,35 @@ export async function getCurrentUser(): Promise<User> {
 }
 
 // ---------------------------------------------------------------------------
+// getFavoritedIds — internal helper. Fetches the current user's favorited
+// item ids from n8n (via the full favorites list endpoint) so getItems and
+// getItemById can mark `favorited: true/false` on their results. Returns an
+// empty Set on any failure or when there's no real Telegram session —
+// browsing never breaks even if this call fails.
+// ---------------------------------------------------------------------------
+async function getFavoritedIds(): Promise<Set<string>> {
+  const n8nBaseUrl = import.meta.env.VITE_N8N_BASE_URL as string | undefined
+  const rawInitData = telegram.getRawInitData()
+
+  if (!n8nBaseUrl || !rawInitData) return new Set(store.favoriteIds)
+
+  try {
+    const res = await fetch(`${n8nBaseUrl}/favorites-list?initData=${encodeURIComponent(rawInitData)}`, {
+      cache: 'no-store',
+    })
+    if (!res.ok) throw new Error(`favorites-list webhook returned ${res.status}`)
+    const data = (await res.json()) as { items: Item[] }
+    if (!data || !Array.isArray(data.items)) {
+      throw new Error('favorites-list webhook returned an unexpected shape (missing items[])')
+    }
+    return new Set(data.items.map((i) => i.id))
+  } catch (err) {
+    console.error('getFavoritedIds: falling back to empty set —', err)
+    return new Set()
+  }
+}
+
+// ---------------------------------------------------------------------------
 // getItems — paginated, filterable feed query.
 //
 // GETs {N8N_BASE_URL}/items with filters as query params. Falls back to the
@@ -147,7 +176,10 @@ export async function getItems(filters: ItemFilters = {}): Promise<PaginatedResu
     if (filters.page) params.set('page', String(filters.page))
     if (filters.pageSize) params.set('pageSize', String(filters.pageSize))
 
-    const res = await fetch(`${n8nBaseUrl}/items?${params.toString()}`, { cache: 'no-store' })
+    const [res, favoritedIds] = await Promise.all([
+      fetch(`${n8nBaseUrl}/items?${params.toString()}`, { cache: 'no-store' }),
+      getFavoritedIds(),
+    ])
     if (!res.ok) throw new Error(`items webhook returned ${res.status}`)
     const data = (await res.json()) as PaginatedResult<Item>
     // Guard against a webhook that isn't wired up correctly yet (wrong shape,
@@ -155,7 +187,10 @@ export async function getItems(filters: ItemFilters = {}): Promise<PaginatedResu
     if (!data || !Array.isArray(data.items)) {
       throw new Error('items webhook returned an unexpected shape (missing items[])')
     }
-    return data
+    return {
+      ...data,
+      items: data.items.map((i) => ({ ...i, favorited: favoritedIds.has(i.id) })),
+    }
   } catch (err) {
     console.error('getItems: falling back to local mock data —', err)
     return getItemsMock(filters)
@@ -256,7 +291,7 @@ async function getItemsMock(filters: ItemFilters = {}): Promise<PaginatedResult<
 // ---------------------------------------------------------------------------
 // getItemById — single item detail lookup.
 //
-// GETs {N8N_BASE_URL}/items/:id. Falls back to the local mock store if
+// GETs {N8N_BASE_URL}/item-detail?id=. Falls back to the local mock store if
 // VITE_N8N_BASE_URL isn't set, the request fails, or the item genuinely
 // isn't found server-side either way.
 // ---------------------------------------------------------------------------
@@ -268,14 +303,17 @@ export async function getItemById(id: string): Promise<Item | undefined> {
   }
 
   try {
-    const res = await fetch(`${n8nBaseUrl}/item-detail?id=${encodeURIComponent(id)}`, { cache: 'no-store' })
+    const [res, favoritedIds] = await Promise.all([
+      fetch(`${n8nBaseUrl}/item-detail?id=${encodeURIComponent(id)}`, { cache: 'no-store' }),
+      getFavoritedIds(),
+    ])
     if (!res.ok) throw new Error(`item detail webhook returned ${res.status}`)
     const data = (await res.json()) as (Item & { notFound?: boolean }) | { notFound: true }
     if ('notFound' in data && data.notFound) return undefined
     if (!data || typeof (data as Item).id !== 'string') {
       throw new Error('item detail webhook returned an unexpected shape (missing id)')
     }
-    return data as Item
+    return { ...(data as Item), favorited: favoritedIds.has((data as Item).id) }
   } catch (err) {
     console.error('getItemById: falling back to local mock data —', err)
     return getItemByIdMock(id)
@@ -355,8 +393,8 @@ async function createListingMock(data: CreateListingInput): Promise<Item> {
 // ---------------------------------------------------------------------------
 // toggleFavorite — like/unlike an item. Returns the new favorited state.
 //
-// POSTs { initData } to {N8N_BASE_URL}/favorites/:id/toggle. Falls back to
-// the local mock store if VITE_N8N_BASE_URL isn't set, there's no real
+// POSTs { initData, itemId } to {N8N_BASE_URL}/favorites-toggle. Falls back
+// to the local mock store if VITE_N8N_BASE_URL isn't set, there's no real
 // Telegram session, or the request fails.
 // ---------------------------------------------------------------------------
 export async function toggleFavorite(id: string): Promise<boolean> {
@@ -402,12 +440,38 @@ async function toggleFavoriteMock(id: string): Promise<boolean> {
 
 // ---------------------------------------------------------------------------
 // getFavoriteItems — convenience helper for the Favorites screen.
+//
+// GETs {N8N_BASE_URL}/favorites-list. Falls back to the local mock store if
+// VITE_N8N_BASE_URL isn't set, there's no real Telegram session, or the
+// request fails.
 // ---------------------------------------------------------------------------
 export async function getFavoriteItems(): Promise<Item[]> {
-  await wait(300)
-  return store.items
-    .filter((i) => store.favoriteIds.includes(i.id))
-    .map((i) => ({ ...i, favorited: true }))
+  const n8nBaseUrl = import.meta.env.VITE_N8N_BASE_URL as string | undefined
+  const rawInitData = telegram.getRawInitData()
+
+  if (!n8nBaseUrl || !rawInitData) {
+    await wait(300)
+    return store.items
+      .filter((i) => store.favoriteIds.includes(i.id))
+      .map((i) => ({ ...i, favorited: true }))
+  }
+
+  try {
+    const res = await fetch(`${n8nBaseUrl}/favorites-list?initData=${encodeURIComponent(rawInitData)}`, {
+      cache: 'no-store',
+    })
+    if (!res.ok) throw new Error(`favorites-list webhook returned ${res.status}`)
+    const data = (await res.json()) as { items: Item[] }
+    if (!data || !Array.isArray(data.items)) {
+      throw new Error('favorites-list webhook returned an unexpected shape (missing items[])')
+    }
+    return data.items
+  } catch (err) {
+    console.error('getFavoriteItems: falling back to local mock data —', err)
+    return store.items
+      .filter((i) => store.favoriteIds.includes(i.id))
+      .map((i) => ({ ...i, favorited: true }))
+  }
 }
 
 // ---------------------------------------------------------------------------
