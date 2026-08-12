@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { Avatar } from '../common/Avatar'
 import type { User } from '../../types'
 import { getGreeting } from '../../utils/format'
-import { telegram } from '../../services/telegram'
 
 export function HomeHeader({ user }: { user: User | null }) {
   const navigate = useNavigate()
@@ -21,7 +20,7 @@ export function HomeHeader({ user }: { user: User | null }) {
       </div>
       <div className="flex items-center gap-2">
         <button
-          onClick={() => telegram.showAlert('Уведомления пока не реализованы — это прототип.')}
+          onClick={() => navigate('/subscriptions')}
           aria-label="Уведомления"
           className="relative w-10 h-10 rounded-full flex items-center justify-center press-spring"
           style={{ background: 'var(--surface-alt)' }}

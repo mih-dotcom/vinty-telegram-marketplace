@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Route, Routes, useLocation } from 'react-router-dom'
+import { Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { AppProvider } from './context/AppContext'
 import { BottomNav } from './components/layout/BottomNav'
 import { FeedScreen } from './screens/FeedScreen'
@@ -19,6 +19,19 @@ function ScrollToTop() {
   return null
 }
 
+// Telegram's WebView can carry over the last-viewed URL from a previous
+// session, so opening the Mini App fresh could otherwise resume on
+// whatever screen was open last time instead of the home feed. This forces
+// every cold launch back to "/", once, without affecting in-app navigation.
+function ForceHomeOnLaunch() {
+  const navigate = useNavigate()
+  useEffect(() => {
+    navigate('/', { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  return null
+}
+
 function AppRoutes() {
   const { pathname } = useLocation()
   // Item detail has its own sticky "Message seller / Buy now" action bar and a
@@ -28,6 +41,7 @@ function AppRoutes() {
 
   return (
     <>
+      <ForceHomeOnLaunch />
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<FeedScreen />} />
