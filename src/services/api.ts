@@ -716,7 +716,7 @@ export const FACETS = {
 
   brands: ["Levi's", 'Nike', 'Coach', 'Zara', 'Hunter', 'Mejuri', 'H&M', 'Uniqlo', 'Muji', 'Adidas'],
 
-  minPrice: 1000,
+  minPrice: 100,
   maxPrice: 500000,
 }
 

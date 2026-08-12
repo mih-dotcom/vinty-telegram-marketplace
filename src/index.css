@@ -10,10 +10,10 @@
    ═══════════════════════════════════════════════════════════════════════ */
 :root {
   /* Brand green — solid fills only, no gradients */
-  --color-primary-green: #00c853;
-  --color-primary-green-light: #34c759;
-  --color-primary-green-dark: #00b248;
-  --color-primary-green-tint: #e6f9ed;
+  --color-primary-green: #3edd6d;
+  --color-primary-green-light: #6be894;
+  --color-primary-green-dark: #2fbe58;
+  --color-primary-green-tint: #e8fbee;
 
   /* Radii — compact, not overly rounded */
   --radius-card: 16px;
@@ -51,7 +51,7 @@
   --text-secondary: rgba(242, 251, 246, 0.6);
   --text-tertiary: rgba(242, 251, 246, 0.38);
   --divider: rgba(255, 255, 255, 0.08);
-  --color-primary-green-tint: rgba(0, 200, 83, 0.16);
+  --color-primary-green-tint: rgba(62, 221, 109, 0.16);
 }
 
 * {

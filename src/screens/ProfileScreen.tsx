@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MoreVertical, Settings } from 'lucide-react'
 import { Avatar } from '../components/common/Avatar'
-import { RatingStars } from '../components/common/RatingStars'
 import { GlassCard } from '../components/common/GlassCard'
 import { TabSwitcher } from '../components/profile/TabSwitcher'
 import { SettingsSheet } from '../components/profile/SettingsSheet'
@@ -15,7 +14,7 @@ import type { Item } from '../types'
 import { formatMemberSince } from '../utils/format'
 import { telegram } from '../services/telegram'
 
-const TABS = ['Мои объявления', 'Избранное', 'Покупки', 'Продано'] as const
+const TABS = ['Мои объявления', 'Избранное', 'Продано'] as const
 type Tab = (typeof TABS)[number]
 
 export function ProfileScreen() {
@@ -35,11 +34,9 @@ export function ProfileScreen() {
     } else if (tab === 'Мои объявления') {
       const mine = await getItemsBySeller(currentUser.id)
       setItems(mine.filter((i) => !i.sold))
-    } else if (tab === 'Продано') {
+    } else {
       const mine = await getItemsBySeller(currentUser.id)
       setItems(mine.filter((i) => i.sold))
-    } else {
-      setItems([]) // Покупки: чекаут пока не реализован в прототипе
     }
     setLoading(false)
   }, [tab, currentUser])
@@ -102,9 +99,6 @@ export function ProfileScreen() {
             <p className="text-[13px] truncate" style={{ color: 'var(--text-secondary)' }}>
               @{currentUser.username}
             </p>
-            <div className="mt-1 flex items-center gap-3">
-              <RatingStars rating={currentUser.rating} count={currentUser.ratingCount} />
-            </div>
           </div>
         </div>
 
@@ -145,14 +139,6 @@ export function ProfileScreen() {
           </div>
         </GlassCard>
 
-        <button
-          onClick={() => telegram.showAlert('Редактирование профиля пока не реализовано — это прототип.')}
-          className="glass rounded-pill py-2.5 font-semibold text-[14px] press-spring"
-          style={{ color: 'var(--text-primary)' }}
-        >
-          Редактировать профиль
-        </button>
-
         <TabSwitcher tabs={TABS} active={tab} onChange={setTab} />
 
         {/* Items grid */}
@@ -162,9 +148,7 @@ export function ProfileScreen() {
           </div>
         ) : items.length === 0 ? (
           <p className="text-center text-[14px] py-10" style={{ color: 'var(--text-tertiary)' }}>
-            {tab === 'Покупки'
-              ? 'Вы пока ничего не купили — оплата ещё не подключена в этом прототипе.'
-              : 'Здесь пока пусто.'}
+            Здесь пока пусто.
           </p>
         ) : (
           <div className="grid grid-cols-2 gap-3">

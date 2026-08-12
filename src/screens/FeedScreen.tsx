@@ -102,14 +102,6 @@ export function FeedScreen() {
       image: 'https://picsum.photos/seed/promo-charity/640/400',
       onAction: () => navigate('/charity'),
     },
-    {
-      id: 'trending',
-      label: 'В тренде',
-      title: 'Смотри, что популярно',
-      cta: 'Смотреть',
-      image: 'https://picsum.photos/seed/promo-trending/640/400',
-      onAction: () => setFilters((f) => ({ ...f, sortBy: 'relevant' })),
-    },
   ]
 
   return (

@@ -1,8 +1,8 @@
 import { useId } from 'react'
 
-const MIN = 1000
+const MIN = 100
 const MAX = 500000
-const STEP = 500
+const STEP = 100
 
 export function PriceRangeSlider({
   min,

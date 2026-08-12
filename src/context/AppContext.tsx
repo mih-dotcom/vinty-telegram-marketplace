@@ -57,16 +57,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     telegram.hapticSelection()
   }, [])
 
-  // Apply Telegram theme_params + colorScheme as CSS custom properties so
-  // the whole app follows Telegram's live theme.
+  // Apply Telegram's light/dark colorScheme as a data attribute so the app
+  // follows Telegram's live theme. Note: we deliberately do NOT pull
+  // --color-primary-green from Telegram's theme_params.button_color —
+  // that's the user's personal Telegram accent color (often blue) and
+  // would override this app's own green brand identity.
   useEffect(() => {
     const root = document.documentElement
     root.setAttribute('data-theme', colorScheme)
-
-    const params = telegram.getThemeParams()
-    if (params.button_color) {
-      root.style.setProperty('--color-primary-green', params.button_color)
-    }
   }, [colorScheme])
 
   const isAdmin = useMemo(
