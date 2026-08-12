@@ -57,9 +57,15 @@ export function ProfileScreen() {
   const handleDelete = async (item: Item) => {
     const ok = await telegram.showConfirm(`Удалить «${item.title}»? Это действие нельзя отменить.`)
     if (!ok) return
-    await deleteListing(item.id)
-    setMenuItem(null)
-    load()
+    try {
+      await deleteListing(item.id)
+      telegram.hapticNotification('success')
+      setMenuItem(null)
+      load()
+    } catch (err) {
+      console.error('Failed to delete listing —', err)
+      telegram.showAlert('Не удалось удалить объявление. Попробуйте ещё раз.')
+    }
   }
 
   if (loadingUser || !currentUser) {

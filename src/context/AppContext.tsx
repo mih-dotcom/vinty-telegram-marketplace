@@ -13,7 +13,13 @@ interface AppContextValue {
   isFavorited: (id: string) => boolean
   toggleFavorite: (item: Item) => Promise<void>
   colorScheme: 'light' | 'dark'
+  isAdmin: boolean
 }
+
+// Only this Telegram username can delete ANY listing (not just their own).
+// Enforced for real server-side in the n8n "delete listing" workflow — this
+// client-side flag only controls whether the delete button is shown.
+const ADMIN_USERNAME = 'tell_somebody'
 
 const AppContext = createContext<AppContextValue | undefined>(undefined)
 
@@ -63,6 +69,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [colorScheme])
 
+  const isAdmin = useMemo(
+    () => (currentUser?.username ?? '').toLowerCase() === ADMIN_USERNAME.toLowerCase(),
+    [currentUser]
+  )
+
   const value = useMemo(
     () => ({
       currentUser,
@@ -72,8 +83,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       isFavorited,
       toggleFavorite,
       colorScheme,
+      isAdmin,
     }),
-    [currentUser, loadingUser, refreshUser, favoriteIds, isFavorited, toggleFavorite, colorScheme]
+    [currentUser, loadingUser, refreshUser, favoriteIds, isFavorited, toggleFavorite, colorScheme, isAdmin]
   )
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

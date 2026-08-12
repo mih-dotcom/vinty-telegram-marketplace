@@ -560,12 +560,34 @@ export async function uploadImage(file: File): Promise<string> {
 }
 
 // ---------------------------------------------------------------------------
-// deleteListing — remove one of the current user's own items.
+// deleteListing — remove a listing. Server-side (n8n) enforces that only
+// the item's own seller OR the hardcoded admin Telegram username may do
+// this — the client never decides authorization on its own.
+//
+// Deliberately does NOT fall back to a silent local-only delete if the real
+// request fails — a delete is destructive/authoritative, so callers should
+// see the failure (they already do: ItemDetailScreen catches this and shows
+// an alert) rather than the item quietly reappearing for everyone else.
 // ---------------------------------------------------------------------------
 export async function deleteListing(id: string): Promise<void> {
-  await wait(250)
-  store.items = store.items.filter((i) => i.id !== id)
-  saveStore(store)
+  const n8nBaseUrl = import.meta.env.VITE_N8N_BASE_URL as string | undefined
+  const rawInitData = telegram.getRawInitData()
+
+  if (!n8nBaseUrl || !rawInitData) {
+    store.items = store.items.filter((i) => i.id !== id)
+    saveStore(store)
+    return
+  }
+
+  const res = await fetch(`${n8nBaseUrl}/delete-listing`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ initData: rawInitData, itemId: id }),
+    cache: 'no-store',
+  })
+  if (!res.ok) {
+    throw new Error(`delete-listing webhook returned ${res.status}`)
+  }
 }
 
 // ---------------------------------------------------------------------------

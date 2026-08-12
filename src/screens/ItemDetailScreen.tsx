@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ChevronLeft, Heart, Share2 } from 'lucide-react'
-import { getItemById, getUserProfile } from '../services/api'
+import { ChevronLeft, Heart, Share2, Trash2 } from 'lucide-react'
+import { deleteListing, getItemById, getUserProfile } from '../services/api'
 import type { Item, User } from '../types'
 import { ConditionBadge, InfoChip } from '../components/common/ConditionBadge'
 import { Avatar } from '../components/common/Avatar'
@@ -15,14 +15,38 @@ import { formatPrice, timeAgo } from '../utils/format'
 export function ItemDetailScreen() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { isFavorited, toggleFavorite } = useApp()
+  const { isFavorited, toggleFavorite, currentUser, isAdmin } = useApp()
 
   const [item, setItem] = useState<Item | null>(null)
   const [seller, setSeller] = useState<User | null>(null)
   const [photoIndex, setPhotoIndex] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [deleting, setDeleting] = useState(false)
 
   useBackButton(() => navigate(-1))
+
+  const canDelete = !!item && (isAdmin || (!!currentUser && item.sellerId === currentUser.id))
+
+  const handleDelete = async () => {
+    if (!item) return
+    const confirmed = await telegram.showConfirm(
+      isAdmin && item.sellerId !== currentUser?.id
+        ? `Удалить это объявление как администратор? Это действие необратимо.`
+        : 'Удалить это объявление? Это действие необратимо.'
+    )
+    if (!confirmed) return
+    setDeleting(true)
+    try {
+      await deleteListing(item.id)
+      telegram.hapticNotification('success')
+      navigate(-1)
+    } catch (err) {
+      console.error('Failed to delete listing —', err)
+      telegram.showAlert('Не удалось удалить объявление. Попробуйте ещё раз.')
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   useEffect(() => {
     if (!id) return
@@ -80,6 +104,16 @@ export function ItemDetailScreen() {
             <ChevronLeft size={22} className="text-white" />
           </button>
           <div className="flex items-center gap-2">
+            {canDelete && (
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                aria-label="Удалить объявление"
+                className="w-10 h-10 rounded-full glass flex items-center justify-center press-spring disabled:opacity-50"
+              >
+                <Trash2 size={18} className="text-white" />
+              </button>
+            )}
             <button
               onClick={() => telegram.showAlert('Функция «поделиться» пока не подключена.')}
               aria-label="Поделиться"
