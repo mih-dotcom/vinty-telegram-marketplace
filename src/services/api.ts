@@ -486,10 +486,34 @@ export async function getItemsBySeller(sellerId: string): Promise<Item[]> {
 
 // ---------------------------------------------------------------------------
 // getUserProfile — public profile lookup (e.g. tapping a seller).
+//
+// GETs {N8N_BASE_URL}/user-profile?id=. Falls back to the local mock data if
+// VITE_N8N_BASE_URL isn't set, the request fails, or the user genuinely
+// isn't found server-side either way.
 // ---------------------------------------------------------------------------
 export async function getUserProfile(userId: string): Promise<User | undefined> {
-  await wait(200)
-  return mockUsers.find((u) => u.id === userId)
+  const n8nBaseUrl = import.meta.env.VITE_N8N_BASE_URL as string | undefined
+
+  if (!n8nBaseUrl) {
+    await wait(200)
+    return mockUsers.find((u) => u.id === userId)
+  }
+
+  try {
+    const res = await fetch(`${n8nBaseUrl}/user-profile?id=${encodeURIComponent(userId)}`, {
+      cache: 'no-store',
+    })
+    if (!res.ok) throw new Error(`user-profile webhook returned ${res.status}`)
+    const data = (await res.json()) as (User & { notFound?: boolean }) | { notFound: true }
+    if ('notFound' in data && data.notFound) return undefined
+    if (!data || typeof (data as User).id !== 'string') {
+      throw new Error('user-profile webhook returned an unexpected shape (missing id)')
+    }
+    return data as User
+  } catch (err) {
+    console.error('getUserProfile: falling back to local mock data —', err)
+    return mockUsers.find((u) => u.id === userId)
+  }
 }
 
 // ---------------------------------------------------------------------------

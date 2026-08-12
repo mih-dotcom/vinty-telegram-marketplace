@@ -179,7 +179,13 @@ export function ItemDetailScreen() {
       <div className="fixed bottom-0 left-0 right-0 flex justify-center px-4 safe-bottom pointer-events-none z-40">
         <div className="glass-strong rounded-t-sheet w-full max-w-[560px] px-4 pt-3 pb-3 flex gap-3 pointer-events-auto shadow-glass-lg">
           <button
-            onClick={() => telegram.showAlert('Переписка с продавцами скоро появится.')}
+            onClick={() => {
+              if (seller?.username) {
+                telegram.openTelegramLink(`https://t.me/${seller.username}`)
+              } else {
+                telegram.showAlert('У продавца не задан username в Telegram — написать напрямую нельзя.')
+              }
+            }}
             className="flex-1 glass rounded-pill py-3 font-semibold text-[14px] press-spring"
             style={{ color: 'var(--text-primary)' }}
           >

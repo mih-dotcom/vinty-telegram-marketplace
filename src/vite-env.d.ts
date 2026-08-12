@@ -92,6 +92,7 @@ interface TelegramWebApp {
   showAlert: (message: string, cb?: () => void) => void
   showConfirm: (message: string, cb?: (ok: boolean) => void) => void
   showPopup: (params: { title?: string; message: string; buttons?: Array<{ id?: string; type?: string; text: string }> }, cb?: (id: string) => void) => void
+  openTelegramLink: (url: string) => void
 }
 
 interface Window {

@@ -141,4 +141,18 @@ export const telegram = {
       if (!ok) resolve(window.confirm(message))
     })
   },
+
+  /**
+   * Opens a t.me link — e.g. a user's DM (`https://t.me/username`) — using
+   * Telegram's native in-app navigation when available (keeps the person
+   * inside Telegram instead of bouncing out to a system browser). Falls
+   * back to a plain new-tab open outside Telegram (dev/browser preview).
+   */
+  openTelegramLink(url: string) {
+    const opened = safeCall((tg) => {
+      tg.openTelegramLink(url)
+      return true
+    })
+    if (!opened) window.open(url, '_blank')
+  },
 }
