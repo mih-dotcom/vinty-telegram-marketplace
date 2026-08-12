@@ -1,11 +1,10 @@
-import { Sparkles, Star, TrendingUp } from 'lucide-react'
+import { Sparkles, Star } from 'lucide-react'
 import type { ItemFilters } from '../../types'
 
 type QuickSort = NonNullable<ItemFilters['sortBy']>
 
 const OPTIONS: { key: QuickSort; label: string; icon: typeof Sparkles }[] = [
   { key: 'newest', label: 'Новое', icon: Sparkles },
-  { key: 'relevant', label: 'В тренде', icon: TrendingUp },
   { key: 'price_low', label: 'Недорого', icon: Star },
 ]
 

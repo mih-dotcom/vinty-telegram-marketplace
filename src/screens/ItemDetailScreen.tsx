@@ -5,7 +5,6 @@ import { deleteListing, getItemById, getUserProfile } from '../services/api'
 import type { Item, User } from '../types'
 import { ConditionBadge, InfoChip } from '../components/common/ConditionBadge'
 import { Avatar } from '../components/common/Avatar'
-import { RatingStars } from '../components/common/RatingStars'
 import { Spinner } from '../components/common/ProgressRing'
 import { useApp } from '../context/AppContext'
 import { useBackButton } from '../hooks/useTelegram'
@@ -168,7 +167,9 @@ export function ItemDetailScreen() {
               <p className="text-[14px] font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
                 {seller.name}
               </p>
-              <RatingStars rating={seller.rating} count={seller.ratingCount} />
+              <p className="text-[12.5px] truncate" style={{ color: 'var(--text-secondary)' }}>
+                @{seller.username}
+              </p>
             </div>
             <span className="text-[13px] font-semibold" style={{ color: 'var(--color-primary-green)' }}>
               Профиль

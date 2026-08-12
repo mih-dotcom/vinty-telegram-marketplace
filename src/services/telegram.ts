@@ -79,6 +79,11 @@ export const telegram = {
     if (!tg) return () => {}
     safeCall(() => {
       tg.MainButton.setText(text)
+      // Telegram's MainButton defaults to the user's personal Telegram
+      // accent color (often blue) unless told otherwise — force it to this
+      // app's green brand color instead.
+      tg.MainButton.color = '#3edd6d'
+      tg.MainButton.textColor = '#04240f'
       tg.MainButton.show()
       tg.MainButton.enable()
       tg.MainButton.onClick(onClick)

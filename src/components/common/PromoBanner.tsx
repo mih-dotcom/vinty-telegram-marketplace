@@ -57,7 +57,10 @@ export function PromoBanner({ slides }: { slides: PromoSlide[] }) {
                 {slide.label}
               </span>
               <h2 className="text-[22px] font-bold text-white leading-tight">{slide.title}</h2>
-              <span className="inline-flex items-center gap-1 bg-white text-[13px] font-semibold px-3 py-2 rounded-pill w-fit mt-1">
+              <span
+                className="inline-flex items-center gap-1 bg-white text-[13px] font-semibold px-3 py-2 rounded-pill w-fit mt-1"
+                style={{ color: '#0b120e' }}
+              >
                 {slide.cta}
                 <ChevronRight size={14} />
               </span>
