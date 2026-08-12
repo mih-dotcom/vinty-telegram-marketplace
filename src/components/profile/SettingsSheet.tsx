@@ -1,9 +1,11 @@
-import { Bell, ChevronRight } from 'lucide-react'
+import { BarChart3, Bell, ChevronRight } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Sheet } from '../layout/Sheet'
+import { useApp } from '../../context/AppContext'
 
 export function SettingsSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const navigate = useNavigate()
+  const { isAdmin } = useApp()
 
   const rows = [
     {
@@ -14,6 +16,18 @@ export function SettingsSheet({ open, onClose }: { open: boolean; onClose: () =>
         navigate('/subscriptions')
       },
     },
+    ...(isAdmin
+      ? [
+          {
+            icon: BarChart3,
+            label: 'Статистика',
+            action: () => {
+              onClose()
+              navigate('/admin-stats')
+            },
+          },
+        ]
+      : []),
   ]
 
   return (

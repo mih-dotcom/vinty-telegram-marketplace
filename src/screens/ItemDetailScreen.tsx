@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ChevronLeft, Heart, Pencil, Trash2 } from 'lucide-react'
-import { deleteListing, getItemById, getUserProfile, markAsSold } from '../services/api'
+import { deleteListing, getItemById, getUserProfile, markAsSold, trackMessageClick } from '../services/api'
 import type { Item, User } from '../types'
 import { ConditionBadge, InfoChip } from '../components/common/ConditionBadge'
 import { Avatar } from '../components/common/Avatar'
@@ -258,6 +258,7 @@ export function ItemDetailScreen() {
         <div className="glass-strong rounded-pill w-full max-w-[560px] px-4 py-3 flex pointer-events-auto shadow-glass-lg">
           <button
             onClick={() => {
+              trackMessageClick(item.id)
               if (seller?.username) {
                 telegram.openTelegramLink(`https://t.me/${seller.username}`)
               } else {

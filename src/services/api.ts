@@ -907,3 +907,58 @@ export async function searchBrands(query: string): Promise<string[]> {
     return FACETS.brands.filter((b) => b.toLowerCase().includes(query.toLowerCase()))
   }
 }
+
+// ---------------------------------------------------------------------------
+// trackMessageClick — fire-and-forget analytics ping when someone taps
+// "Написать продавцу". No auth required (it's a non-sensitive counter), and
+// failures are swallowed silently — this must never block or break the
+// actual "open Telegram DM" action it accompanies.
+// ---------------------------------------------------------------------------
+export function trackMessageClick(itemId: string): void {
+  const n8nBaseUrl = import.meta.env.VITE_N8N_BASE_URL as string | undefined
+  if (!n8nBaseUrl) return
+  fetch(`${n8nBaseUrl}/track-message-click`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ itemId }),
+    cache: 'no-store',
+  }).catch((err) => console.error('trackMessageClick failed (non-blocking) —', err))
+}
+
+// ---------------------------------------------------------------------------
+// getAdminStats — aggregate, name-free platform stats for the admin screen.
+// Server-side (n8n) enforces that only the admin Telegram username can call
+// this at all.
+// ---------------------------------------------------------------------------
+export interface DayCount {
+  date: string
+  count: number
+}
+
+export interface AdminStats {
+  totalUsers: number
+  totalActiveListings: number
+  totalSoldItems: number
+  totalMessageClicks: number
+  signupsLast7Days: DayCount[]
+  listingsLast7Days: DayCount[]
+}
+
+export async function getAdminStats(): Promise<AdminStats> {
+  const n8nBaseUrl = import.meta.env.VITE_N8N_BASE_URL as string | undefined
+  const rawInitData = telegram.getRawInitData()
+
+  if (!n8nBaseUrl || !rawInitData) {
+    throw new Error('Backend not configured — admin stats requires a real Telegram session')
+  }
+
+  const res = await fetch(`${n8nBaseUrl}/admin-stats?initData=${encodeURIComponent(rawInitData)}`, {
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(`admin-stats webhook returned ${res.status}`)
+  const data = (await res.json()) as AdminStats
+  if (!data || typeof data.totalUsers !== 'number') {
+    throw new Error('admin-stats webhook returned an unexpected shape (missing totalUsers)')
+  }
+  return data
+}
