@@ -1,11 +1,11 @@
-import { useRef, useState, type DragEvent } from 'react'
+import { useEffect, useRef, useState, type DragEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Camera, ChevronRight, GripVertical, X } from 'lucide-react'
 import { ScreenHeader } from '../components/layout/ScreenHeader'
 import { Sheet } from '../components/layout/Sheet'
 import { ChipSelect } from '../components/filters/ChipSelect'
 import { ProgressRing } from '../components/common/ProgressRing'
-import { createListing, uploadImage, FACETS } from '../services/api'
+import { createListing, uploadImage, searchBrands, FACETS } from '../services/api'
 import type { Category, Condition, Gender } from '../types'
 import { telegram } from '../services/telegram'
 import { useMainButton } from '../hooks/useTelegram'
@@ -130,9 +130,20 @@ export function UploadScreen() {
     loading: submitting,
   })
 
-  const filteredBrands = brand
-    ? FACETS.brands.filter((b) => b.toLowerCase().includes(brand.toLowerCase()) && b !== brand)
-    : []
+  const [brandResults, setBrandResults] = useState<string[]>([])
+  useEffect(() => {
+    let cancelled = false
+    const handle = setTimeout(() => {
+      searchBrands(brand.trim()).then((results) => {
+        if (!cancelled) setBrandResults(results.filter((b) => b !== brand))
+      })
+    }, 250)
+    return () => {
+      cancelled = true
+      clearTimeout(handle)
+    }
+  }, [brand])
+  const filteredBrands = brandResults
 
   return (
     <div className="pb-40">

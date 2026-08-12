@@ -797,3 +797,30 @@ export async function unsubscribe(subscriptionId: string): Promise<void> {
   })
   if (!res.ok) throw new Error(`unsubscribe webhook returned ${res.status}`)
 }
+
+// ---------------------------------------------------------------------------
+// searchBrands — autocomplete against the growing, crowd-sourced `brands`
+// table in Supabase. Falls back to the small static FACETS.brands list
+// (filtered client-side) if VITE_N8N_BASE_URL isn't set or the request
+// fails, so the brand picker never breaks even without a backend.
+// ---------------------------------------------------------------------------
+export async function searchBrands(query: string): Promise<string[]> {
+  const n8nBaseUrl = import.meta.env.VITE_N8N_BASE_URL as string | undefined
+
+  if (!n8nBaseUrl) {
+    return FACETS.brands.filter((b) => b.toLowerCase().includes(query.toLowerCase()))
+  }
+
+  try {
+    const res = await fetch(`${n8nBaseUrl}/brands?q=${encodeURIComponent(query)}`, { cache: 'no-store' })
+    if (!res.ok) throw new Error(`brands webhook returned ${res.status}`)
+    const data = (await res.json()) as { brands: string[] }
+    if (!data || !Array.isArray(data.brands)) {
+      throw new Error('brands webhook returned an unexpected shape (missing brands[])')
+    }
+    return data.brands
+  } catch (err) {
+    console.error('searchBrands: falling back to local static list —', err)
+    return FACETS.brands.filter((b) => b.toLowerCase().includes(query.toLowerCase()))
+  }
+}

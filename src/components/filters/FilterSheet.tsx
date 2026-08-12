@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Sheet } from '../layout/Sheet'
 import { PriceRangeSlider } from './PriceRangeSlider'
 import { ChipSelect } from './ChipSelect'
 import { ColorSwatches } from './ColorSwatches'
-import { FACETS } from '../../services/api'
+import { FACETS, searchBrands } from '../../services/api'
 import type { Category, Condition, Gender, ItemFilters } from '../../types'
 
 const SORT_OPTIONS: { value: NonNullable<ItemFilters['sortBy']>; label: string }[] = [
@@ -71,9 +71,19 @@ export function FilterSheet({
     setDraft((d) => ({ ...d, category, subcategories: [], sizes: [] }))
   }
 
-  const filteredBrands = FACETS.brands.filter((b) =>
-    b.toLowerCase().includes(brandQuery.toLowerCase())
-  )
+  const [filteredBrands, setFilteredBrands] = useState<string[]>([])
+  useEffect(() => {
+    let cancelled = false
+    const handle = setTimeout(() => {
+      searchBrands(brandQuery).then((results) => {
+        if (!cancelled) setFilteredBrands(results)
+      })
+    }, 250)
+    return () => {
+      cancelled = true
+      clearTimeout(handle)
+    }
+  }, [brandQuery])
 
   const subcategoryOptions =
     draft.category !== 'All' ? FACETS.subcategoriesByCategory[draft.category] : []
