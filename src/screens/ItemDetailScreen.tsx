@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ChevronLeft, Heart, Pencil, Trash2 } from 'lucide-react'
 import { deleteListing, getItemById, getUserProfile, markAsSold } from '../services/api'
@@ -28,6 +28,7 @@ export function ItemDetailScreen() {
   const [item, setItem] = useState<Item | null>(null)
   const [seller, setSeller] = useState<User | null>(null)
   const [photoIndex, setPhotoIndex] = useState(0)
+  const photoScrollRef = useRef<HTMLDivElement>(null)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [actionsOpen, setActionsOpen] = useState(false)
@@ -114,13 +115,26 @@ export function ItemDetailScreen() {
 
   return (
     <div className="pb-32">
-      {/* Photo carousel */}
+      {/* Photo carousel — real horizontal swipe via scroll-snap, not just tap-the-dots */}
       <div className="relative w-full aspect-[3/4] bg-black/20">
-        <img
-          src={item.images[photoIndex]}
-          alt={item.title}
-          className="w-full h-full object-cover"
-        />
+        <div
+          ref={photoScrollRef}
+          className="w-full h-full flex overflow-x-auto no-scrollbar snap-x snap-mandatory"
+          onScroll={(e) => {
+            const el = e.currentTarget
+            const index = Math.round(el.scrollLeft / el.clientWidth)
+            setPhotoIndex(Math.min(Math.max(index, 0), item.images.length - 1))
+          }}
+        >
+          {item.images.map((src, i) => (
+            <img
+              key={i}
+              src={src}
+              alt={`${item.title} — фото ${i + 1}`}
+              className="w-full h-full object-cover shrink-0 snap-center"
+            />
+          ))}
+        </div>
 
         <div className="absolute top-0 left-0 right-0 safe-top px-4 flex items-center justify-between">
           <button
@@ -172,7 +186,10 @@ export function ItemDetailScreen() {
             {item.images.map((_, i) => (
               <button
                 key={i}
-                onClick={() => setPhotoIndex(i)}
+                onClick={() => {
+                  setPhotoIndex(i)
+                  photoScrollRef.current?.scrollTo({ left: i * photoScrollRef.current.clientWidth, behavior: 'smooth' })
+                }}
                 aria-label={`Фото ${i + 1}`}
                 className="rounded-full transition-all backdrop-blur-md"
                 style={{
@@ -187,15 +204,9 @@ export function ItemDetailScreen() {
       </div>
 
       <div className="px-4 pt-4 flex flex-col gap-4">
-        {/* Seller row */}
+        {/* Seller row — informational only, not clickable (public seller profiles aren't part of this prototype) */}
         {seller && (
-          <button
-            onClick={() => {
-              telegram.hapticSelection()
-              telegram.showAlert('Публичные профили продавцов пока не реализованы — это прототип.')
-            }}
-            className="flex items-center gap-3 glass rounded-card px-3 py-3 press-spring text-left"
-          >
+          <div className="flex items-center gap-3 glass rounded-card px-3 py-3">
             <Avatar src={seller.avatarUrl} name={seller.name} size={44} />
             <div className="flex-1 min-w-0">
               <p className="text-[14px] font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
@@ -205,10 +216,7 @@ export function ItemDetailScreen() {
                 @{seller.username}
               </p>
             </div>
-            <span className="text-[13px] font-semibold" style={{ color: 'var(--color-primary-green)' }}>
-              Профиль
-            </span>
-          </button>
+          </div>
         )}
 
         {/* Price + title */}
@@ -244,9 +252,10 @@ export function ItemDetailScreen() {
         </div>
       </div>
 
-      {/* Sticky bottom bar */}
-      <div className="fixed bottom-0 left-0 right-0 flex justify-center px-4 safe-bottom pointer-events-none z-40">
-        <div className="glass-strong rounded-t-sheet w-full max-w-[560px] px-4 pt-3 pb-3 flex gap-3 pointer-events-auto shadow-glass-lg">
+      {/* Sticky bottom bar — full pill shape, single "message seller" action
+          (no "Buy" — this platform is for arranging contact, not payments) */}
+      <div className="fixed bottom-0 left-0 right-0 flex justify-center px-4 pb-4 safe-bottom pointer-events-none z-40">
+        <div className="glass-strong rounded-pill w-full max-w-[560px] px-4 py-3 flex pointer-events-auto shadow-glass-lg">
           <button
             onClick={() => {
               if (seller?.username) {
@@ -255,16 +264,9 @@ export function ItemDetailScreen() {
                 telegram.showAlert('У продавца не задан username в Telegram — написать напрямую нельзя.')
               }
             }}
-            className="flex-1 glass rounded-pill py-3 font-semibold text-[14px] press-spring"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            Написать продавцу
-          </button>
-          <button
-            onClick={() => telegram.showAlert('Оплата пока не подключена — это прототип.')}
             className="flex-1 cta-gradient text-white rounded-pill py-3 font-bold text-[14px] press-spring shadow-glass"
           >
-            {item.sold ? 'Продано' : 'Купить'}
+            Написать продавцу
           </button>
         </div>
       </div>
