@@ -1275,3 +1275,52 @@ export async function moderateListing(itemId: string, action: 'approve' | 'ban')
   })
   if (!res.ok) throw new Error(`moderate-listing webhook returned ${res.status}`)
 }
+
+// ---------------------------------------------------------------------------
+// Maintenance mode (admin-only toggle) — everyone else sees a "technical
+// break" screen instead of the app while it's on.
+// ---------------------------------------------------------------------------
+export interface MaintenanceStatus {
+  enabled: boolean
+  message: string | null
+  until: string | null
+}
+
+export async function getMaintenanceStatus(): Promise<MaintenanceStatus> {
+  const n8nBaseUrl = import.meta.env.VITE_N8N_BASE_URL as string | undefined
+  if (!n8nBaseUrl) return { enabled: false, message: null, until: null }
+
+  try {
+    const res = await fetch(`${n8nBaseUrl}/maintenance-status`, { cache: 'no-store' })
+    if (!res.ok) throw new Error(`maintenance-status webhook returned ${res.status}`)
+    const data = (await res.json()) as MaintenanceStatus
+    if (!data || typeof data.enabled !== 'boolean') {
+      throw new Error('maintenance-status webhook returned an unexpected shape (missing enabled)')
+    }
+    return data
+  } catch (err) {
+    console.error('getMaintenanceStatus: assuming no maintenance —', err)
+    return { enabled: false, message: null, until: null }
+  }
+}
+
+export async function setMaintenanceStatus(
+  enabled: boolean,
+  message?: string,
+  until?: string | null
+): Promise<void> {
+  const n8nBaseUrl = import.meta.env.VITE_N8N_BASE_URL as string | undefined
+  const rawInitData = telegram.getRawInitData()
+
+  if (!n8nBaseUrl || !rawInitData) {
+    throw new Error('Backend not configured — this requires a real Telegram session')
+  }
+
+  const res = await fetch(`${n8nBaseUrl}/toggle-maintenance`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ initData: rawInitData, enabled, message, until }),
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(`toggle-maintenance webhook returned ${res.status}`)
+}

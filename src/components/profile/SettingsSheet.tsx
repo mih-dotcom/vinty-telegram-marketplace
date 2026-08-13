@@ -1,4 +1,4 @@
-import { BarChart3, Bell, ChevronRight, ShieldAlert } from 'lucide-react'
+import { BarChart3, Bell, ChevronRight, ShieldAlert, Wrench } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Sheet } from '../layout/Sheet'
 import { useApp } from '../../context/AppContext'
@@ -32,6 +32,14 @@ export function SettingsSheet({ open, onClose }: { open: boolean; onClose: () =>
             action: () => {
               onClose()
               navigate('/admin-moderation')
+            },
+          },
+          {
+            icon: Wrench,
+            label: 'Технический перерыв',
+            action: () => {
+              onClose()
+              navigate('/admin-maintenance')
             },
           },
         ]
