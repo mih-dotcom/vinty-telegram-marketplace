@@ -67,7 +67,7 @@ export function UploadScreen() {
       setSubcategory(found.subcategory)
       setSize(found.size)
       setBrand(found.brand)
-      setCondition(found.condition)
+      setCondition(found.condition ?? '')
       setPrice(String(found.price))
       setPhotos(found.images.map((url, i) => ({ id: `existing-${i}`, url, uploading: false })))
       setLoadingExisting(false)
@@ -80,7 +80,11 @@ export function UploadScreen() {
 
   const subcategoryOptions = category ? FACETS.subcategoriesByCategory[category] : []
   const sizeOptions = category ? FACETS.sizesByCategory[category] : []
-  const genderRequired = category !== '' && !FACETS.categoriesWithoutGender.includes(category as never)
+  const fieldRules = category ? FACETS.categoryFieldRules[category] : null
+  const genderRequired = !!fieldRules?.gender
+  const brandRequired = fieldRules ? fieldRules.brand : true
+  const conditionRequired = fieldRules ? fieldRules.condition : true
+  const sizeRequired = fieldRules ? fieldRules.size : true
 
   const canSubmit =
     photos.length > 0 &&
@@ -88,9 +92,9 @@ export function UploadScreen() {
     (!genderRequired || gender !== '') &&
     category !== '' &&
     subcategory !== '' &&
-    size !== '' &&
-    brand.trim().length > 0 &&
-    condition !== '' &&
+    (!sizeRequired || size !== '') &&
+    (!brandRequired || brand.trim().length > 0) &&
+    (!conditionRequired || condition !== '') &&
     Number(price) > 0 &&
     !submitting
 
@@ -151,7 +155,7 @@ export function UploadScreen() {
         subcategory,
         size,
         brand: brand.trim(),
-        condition: condition as Condition,
+        condition: condition || null,
         price: Number(price),
         images: photos.filter((p) => p.url).map((p) => p.url),
       }
@@ -307,7 +311,7 @@ export function UploadScreen() {
           </div>
         </section>
 
-        {/* Пол — не нужен для категорий вроде "Собаки"/"Дети" */}
+        {/* Пол — не нужен для категорий вроде "Питомцы"/"Дети" */}
         {genderRequired && (
           <section>
             <h3 className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>
@@ -360,66 +364,72 @@ export function UploadScreen() {
           </button>
         </section>
 
-        {/* Размер */}
-        <section>
-          <h3 className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>
-            Размер
-          </h3>
-          <button
-            onClick={() => category && setSizeSheetOpen(true)}
-            disabled={!category}
-            className="glass rounded-2xl px-4 py-3 w-full flex items-center justify-between press-spring disabled:opacity-40"
-          >
-            <span className="text-[15px]" style={{ color: size ? 'var(--text-primary)' : 'var(--text-tertiary)' }}>
-              {size || (category ? 'Выберите размер' : 'Сначала выберите категорию')}
-            </span>
-            <ChevronRight size={18} style={{ color: 'var(--text-tertiary)' }} />
-          </button>
-        </section>
+        {/* Размер — не нужен для некоторых категорий (например, услуги, продукты) */}
+        {sizeRequired && (
+          <section>
+            <h3 className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>
+              Размер
+            </h3>
+            <button
+              onClick={() => category && setSizeSheetOpen(true)}
+              disabled={!category}
+              className="glass rounded-2xl px-4 py-3 w-full flex items-center justify-between press-spring disabled:opacity-40"
+            >
+              <span className="text-[15px]" style={{ color: size ? 'var(--text-primary)' : 'var(--text-tertiary)' }}>
+                {size || (category ? 'Выберите размер' : 'Сначала выберите категорию')}
+              </span>
+              <ChevronRight size={18} style={{ color: 'var(--text-tertiary)' }} />
+            </button>
+          </section>
+        )}
 
-        {/* Бренд с автодополнением */}
-        <section className="relative">
-          <h3 className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>
-            Бренд
-          </h3>
-          <div className="glass rounded-2xl px-4 py-3">
-            <input
-              value={brand}
-              onChange={(e) => setBrand(e.target.value)}
-              onFocus={() => setBrandFocused(true)}
-              onBlur={() => setTimeout(() => setBrandFocused(false), 150)}
-              placeholder="например, Nike, Zara..."
-              className="w-full bg-transparent outline-none text-[15px] placeholder:opacity-50"
-              style={{ color: 'var(--text-primary)' }}
-            />
-          </div>
-          {brandFocused && filteredBrands.length > 0 && (
-            <div className="absolute z-20 top-full left-0 right-0 mt-1 glass-strong rounded-2xl overflow-hidden">
-              {filteredBrands.slice(0, 5).map((b) => (
-                <button
-                  key={b}
-                  onMouseDown={() => setBrand(b)}
-                  className="w-full text-left px-4 py-2.5 text-[14px]"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  {b}
-                </button>
-              ))}
+        {/* Бренд с автодополнением — не нужен для некоторых категорий */}
+        {brandRequired && (
+          <section className="relative">
+            <h3 className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>
+              Бренд
+            </h3>
+            <div className="glass rounded-2xl px-4 py-3">
+              <input
+                value={brand}
+                onChange={(e) => setBrand(e.target.value)}
+                onFocus={() => setBrandFocused(true)}
+                onBlur={() => setTimeout(() => setBrandFocused(false), 150)}
+                placeholder="например, Nike, Zara..."
+                className="w-full bg-transparent outline-none text-[15px] placeholder:opacity-50"
+                style={{ color: 'var(--text-primary)' }}
+              />
             </div>
-          )}
-        </section>
+            {brandFocused && filteredBrands.length > 0 && (
+              <div className="absolute z-20 top-full left-0 right-0 mt-1 glass-strong rounded-2xl overflow-hidden">
+                {filteredBrands.slice(0, 5).map((b) => (
+                  <button
+                    key={b}
+                    onMouseDown={() => setBrand(b)}
+                    className="w-full text-left px-4 py-2.5 text-[14px]"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    {b}
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
 
-        {/* Состояние */}
-        <section>
-          <h3 className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>
-            Состояние вещи
-          </h3>
-          <ChipSelect
-            options={FACETS.conditions}
-            selected={condition ? [condition] : []}
-            onToggle={(v) => setCondition(v === condition ? '' : v)}
-          />
-        </section>
+        {/* Состояние — не нужно для некоторых категорий (например, услуги) */}
+        {conditionRequired && (
+          <section>
+            <h3 className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>
+              Состояние
+            </h3>
+            <ChipSelect
+              options={FACETS.conditions}
+              selected={condition ? [condition] : []}
+              onToggle={(v) => setCondition(v === condition ? '' : v)}
+            />
+          </section>
+        )}
 
         {/* Цена */}
         <section>

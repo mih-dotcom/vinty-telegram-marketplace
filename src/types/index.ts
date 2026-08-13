@@ -5,9 +5,21 @@
 // swapping the data source later is a one-file change (see services/api.ts).
 // ─────────────────────────────────────────────────────────────────────────
 
-export type Gender = 'Мужской' | 'Женский' | 'Унисекс' | 'Дети'
+export type Gender = 'Мужской' | 'Женский' | 'Унисекс'
 
-export type Category = 'Обувь' | 'Верхняя одежда' | 'Верх' | 'Низ' | 'Аксессуары' | 'Собаки' | 'Дети'
+export type Category =
+  | 'Обувь'
+  | 'Верхняя одежда'
+  | 'Верх'
+  | 'Низ'
+  | 'Аксессуары'
+  | 'Питомцы'
+  | 'Дети'
+  | 'Электроника и бытовая техника'
+  | 'Товары для дома и дачи'
+  | 'Красота и здоровье'
+  | 'Продукты питания'
+  | 'Услуги репетиторов и поиск персонала'
 
 // Subcategories depend on the selected Category — the full list per category
 // lives in services/api.ts (FACETS.subcategoriesByCategory) rather than as a
@@ -29,7 +41,7 @@ export interface Item {
   images: string[]
   size: string
   brand: string
-  condition: Condition
+  condition: Condition | null
   category: Category
   subcategory: Subcategory
   gender: Gender | null
@@ -91,7 +103,7 @@ export interface CreateListingInput {
   gender: Gender | null
   size: string
   brand: string
-  condition: Condition
+  condition: Condition | null
   color?: string
   price: number
   images: string[] // local object URLs / base64 for the prototype

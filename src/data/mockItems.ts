@@ -88,7 +88,7 @@ export const mockItems: Item[] = [
     condition: 'Носилась часто',
     category: 'Обувь',
     subcategory: 'Ботинки',
-    gender: 'Дети',
+    gender: null,
     color: 'Жёлтый',
     sellerId: 'u1',
     description:

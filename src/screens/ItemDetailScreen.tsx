@@ -234,9 +234,9 @@ export function ItemDetailScreen() {
 
         {/* Бейджи */}
         <div className="flex flex-wrap gap-2">
-          <ConditionBadge condition={item.condition} />
-          <InfoChip label={`Размер ${item.size}`} />
-          <InfoChip label={item.brand} />
+          {item.condition && <ConditionBadge condition={item.condition} />}
+          {item.size && <InfoChip label={`Размер ${item.size}`} />}
+          {item.brand && <InfoChip label={item.brand} />}
           {item.gender && <InfoChip label={item.gender} />}
           {item.color && <InfoChip label={item.color} />}
         </div>

@@ -249,7 +249,7 @@ async function getItemsMock(filters: ItemFilters = {}): Promise<PaginatedResult<
     results = results.filter((i) => sizes.includes(i.size))
   }
   if (conditions?.length) {
-    results = results.filter((i) => conditions.includes(i.condition))
+    results = results.filter((i) => i.condition !== null && conditions.includes(i.condition))
   }
   if (brands?.length) {
     results = results.filter((i) => brands.includes(i.brand))
@@ -758,7 +758,7 @@ export async function updateListing(id: string, data: CreateListingInput): Promi
 
 // Known filter facets, surfaced for building the filter sheet UI.
 export const FACETS = {
-  genders: ['Мужской', 'Женский', 'Унисекс', 'Дети'] as const,
+  genders: ['Мужской', 'Женский', 'Унисекс'] as const,
 
   conditions: [
     'Новая с биркой',
@@ -768,11 +768,39 @@ export const FACETS = {
     'Носилась часто',
   ] as const,
 
-  categories: ['Обувь', 'Верхняя одежда', 'Верх', 'Низ', 'Аксессуары', 'Собаки', 'Дети'] as const,
+  categories: [
+    'Обувь',
+    'Верхняя одежда',
+    'Верх',
+    'Низ',
+    'Аксессуары',
+    'Питомцы',
+    'Дети',
+    'Электроника и бытовая техника',
+    'Товары для дома и дачи',
+    'Красота и здоровье',
+    'Продукты питания',
+    'Услуги репетиторов и поиск персонала',
+  ] as const,
 
-  // Categories where gender/size don't apply the same way as clothing —
-  // the Upload form relaxes those two fields for these.
-  categoriesWithoutGender: ['Собаки', 'Дети'] as const,
+  // Which of Пол / Бренд / Состояние / Размер actually make sense for a
+  // given category — the Upload form hides/relaxes fields accordingly
+  // (a tutoring service doesn't need a "size", produce doesn't need a
+  // "condition", etc). Clothing categories default to needing all four.
+  categoryFieldRules: {
+    Обувь: { gender: true, brand: true, condition: true, size: true },
+    'Верхняя одежда': { gender: true, brand: true, condition: true, size: true },
+    Верх: { gender: true, brand: true, condition: true, size: true },
+    Низ: { gender: true, brand: true, condition: true, size: true },
+    Аксессуары: { gender: true, brand: true, condition: true, size: true },
+    Питомцы: { gender: false, brand: true, condition: true, size: true },
+    Дети: { gender: false, brand: true, condition: true, size: true },
+    'Электроника и бытовая техника': { gender: false, brand: true, condition: true, size: false },
+    'Товары для дома и дачи': { gender: false, brand: true, condition: true, size: false },
+    'Красота и здоровье': { gender: false, brand: true, condition: true, size: false },
+    'Продукты питания': { gender: false, brand: false, condition: false, size: false },
+    'Услуги репетиторов и поиск персонала': { gender: false, brand: false, condition: false, size: false },
+  } as Record<Category, { gender: boolean; brand: boolean; condition: boolean; size: boolean }>,
 
   // Subcategory options depend on the selected Category.
   subcategoriesByCategory: {
@@ -822,18 +850,19 @@ export const FACETS = {
       'Кошельки',
       'Другое',
     ],
-    Собаки: [
+    Питомцы: [
       'Поводки',
       'Ошейники',
       'Шлейки',
-      'Одежда для собак',
+      'Одежда для питомцев',
       'Игрушки',
       'Корм',
       'Лакомства',
       'Миски',
       'Лежанки и домики',
       'Переноски',
-      'Когти и уход',
+      'Аквариумы и террариумы',
+      'Уход и гигиена',
       'Аксессуары',
       'Другое',
     ],
@@ -851,19 +880,77 @@ export const FACETS = {
       'Аксессуары',
       'Другое',
     ],
+    'Электроника и бытовая техника': [
+      'Смартфоны',
+      'Ноутбуки и компьютеры',
+      'Планшеты',
+      'Телевизоры',
+      'Наушники и колонки',
+      'Фото и видео',
+      'Игровые приставки и игры',
+      'Умные часы и гаджеты',
+      'Стиральные машины',
+      'Холодильники',
+      'Микроволновки и духовки',
+      'Пылесосы',
+      'Мелкая кухонная техника',
+      'Другое',
+    ],
+    'Товары для дома и дачи': [
+      'Мебель',
+      'Посуда и кухонная утварь',
+      'Текстиль (шторы, постельное)',
+      'Освещение',
+      'Инструменты',
+      'Садовый инвентарь',
+      'Декор',
+      'Растения',
+      'Стройматериалы',
+      'Другое',
+    ],
+    'Красота и здоровье': [
+      'Косметика',
+      'Парфюмерия',
+      'Уход за кожей',
+      'Уход за волосами',
+      'Маникюр и педикюр',
+      'Массажёры и приборы',
+      'Витамины и БАДы',
+      'Медицинские изделия',
+      'Другое',
+    ],
+    'Продукты питания': [
+      'Консервы',
+      'Крупы и макароны',
+      'Сладости',
+      'Напитки',
+      'Домашние заготовки',
+      'Мёд',
+      'Специи',
+      'Другое',
+    ],
+    'Услуги репетиторов и поиск персонала': [
+      'Репетиторство',
+      'Няня',
+      'Уборка',
+      'Ремонт и мастер на час',
+      'Работа / вакансии',
+      'Курьер',
+      'Другое',
+    ],
   } as Record<Category, string[]>,
 
   // Size options depend on category — shoe sizing and clothing sizing don't
-  // mix well in one flat list. sizes below is the master/combined list, used
-  // when no category is selected yet (e.g. the filter sheet before a
-  // category is chosen).
+  // mix well in one flat list. Categories where размер doesn't apply
+  // (see categoryFieldRules) get an empty array — the Upload form hides
+  // the whole "Размер" section for those.
   sizesByCategory: {
     Обувь: ['35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46'],
     'Верхняя одежда': ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
     Верх: ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
     Низ: ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
     Аксессуары: ['Один размер'],
-    Собаки: ['XS', 'S', 'M', 'L', 'XL', 'Универсальный'],
+    Питомцы: ['XS', 'S', 'M', 'L', 'XL', 'Универсальный'],
     Дети: [
       '0-3 мес',
       '3-6 мес',
@@ -877,6 +964,11 @@ export const FACETS = {
       '6-7 лет',
       'Универсальный',
     ],
+    'Электроника и бытовая техника': [],
+    'Товары для дома и дачи': [],
+    'Красота и здоровье': [],
+    'Продукты питания': [],
+    'Услуги репетиторов и поиск персонала': [],
   } as Record<Category, string[]>,
 
   sizes: [
@@ -915,7 +1007,23 @@ export const FACETS = {
     { name: 'Золотой', hex: '#D4AF37' },
   ],
 
-  brands: ["Levi's", 'Nike', 'Coach', 'Zara', 'Hunter', 'Mejuri', 'H&M', 'Uniqlo', 'Muji', 'Adidas'],
+  brands: [
+    "Levi's",
+    'Nike',
+    'Coach',
+    'Zara',
+    'Hunter',
+    'Mejuri',
+    'H&M',
+    'Uniqlo',
+    'Muji',
+    'Adidas',
+    'Samsung',
+    'Apple',
+    'Xiaomi',
+    'IKEA',
+    "L'Oreal",
+  ],
 
   minPrice: 100,
   maxPrice: 500000,

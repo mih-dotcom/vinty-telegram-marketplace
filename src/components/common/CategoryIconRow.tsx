@@ -1,5 +1,18 @@
 import type { ComponentType } from 'react'
-import { Baby, Footprints, Gem, LayoutGrid, PawPrint, Shirt, Wind } from 'lucide-react'
+import {
+  Baby,
+  Briefcase,
+  Footprints,
+  Gem,
+  HeartPulse,
+  LayoutGrid,
+  PawPrint,
+  Shirt,
+  ShoppingBasket,
+  Smartphone,
+  Sofa,
+  Wind,
+} from 'lucide-react'
 import type { Category } from '../../types'
 
 type IconComponent = ComponentType<{ size?: number | string; color?: string; strokeWidth?: number | string }>
@@ -34,8 +47,13 @@ const ITEMS: { key: Category | 'All'; label: string; icon: IconComponent }[] = [
   { key: 'Верх', label: 'Верх', icon: Shirt },
   { key: 'Низ', label: 'Низ', icon: PantsIcon },
   { key: 'Аксессуары', label: 'Аксессуары', icon: Gem },
-  { key: 'Собаки', label: 'Собаки', icon: PawPrint },
+  { key: 'Питомцы', label: 'Питомцы', icon: PawPrint },
   { key: 'Дети', label: 'Дети', icon: Baby },
+  { key: 'Электроника и бытовая техника', label: 'Электроника', icon: Smartphone },
+  { key: 'Товары для дома и дачи', label: 'Дом и дача', icon: Sofa },
+  { key: 'Красота и здоровье', label: 'Красота', icon: HeartPulse },
+  { key: 'Продукты питания', label: 'Продукты', icon: ShoppingBasket },
+  { key: 'Услуги репетиторов и поиск персонала', label: 'Услуги', icon: Briefcase },
 ]
 
 export function CategoryIconRow({
