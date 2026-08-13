@@ -90,6 +90,13 @@ export function FilterSheet({
   const sizeOptions =
     draft.category !== 'All' ? FACETS.sizesByCategory[draft.category] : FACETS.sizes
 
+  // Only show the "Пол" filter for categories where gender is actually a
+  // meaningful field on the listing (same source of truth as the Upload
+  // form's categoryFieldRules) — e.g. "Дети" items never have a gender set,
+  // so filtering by it there would always return zero results.
+  const genderApplicable =
+    draft.category !== 'All' && !!FACETS.categoryFieldRules[draft.category]?.gender
+
   return (
     <Sheet
       open={open}
@@ -119,17 +126,6 @@ export function FilterSheet({
       <div className="flex flex-col gap-6">
         <section>
           <h3 className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>
-            Пол
-          </h3>
-          <ChipSelect
-            options={FACETS.genders}
-            selected={draft.genders}
-            onToggle={(v) => toggle('genders', v)}
-          />
-        </section>
-
-        <section>
-          <h3 className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>
             Категория
           </h3>
           <div className="flex flex-wrap gap-2">
@@ -152,6 +148,19 @@ export function FilterSheet({
             })}
           </div>
         </section>
+
+        {genderApplicable && (
+          <section>
+            <h3 className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>
+              Пол
+            </h3>
+            <ChipSelect
+              options={FACETS.genders}
+              selected={draft.genders}
+              onToggle={(v) => toggle('genders', v)}
+            />
+          </section>
+        )}
 
         {draft.category === 'Одежда' ? (
           <section>
