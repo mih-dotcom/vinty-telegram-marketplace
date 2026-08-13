@@ -545,11 +545,64 @@ export async function getUserProfile(userId: string): Promise<User | undefined> 
 
 // ---------------------------------------------------------------------------
 // getCharities — organizations accepting clothing donations (Charity tab).
-// Later: GET {N8N_BASE_URL}/charities, possibly filtered by user location.
+//
+// GETs {N8N_BASE_URL}/charities. Falls back to the local mock data if
+// VITE_N8N_BASE_URL isn't set or the request fails.
 // ---------------------------------------------------------------------------
 export async function getCharities(): Promise<CharityOrg[]> {
-  await wait(300)
-  return mockCharities
+  const n8nBaseUrl = import.meta.env.VITE_N8N_BASE_URL as string | undefined
+
+  if (!n8nBaseUrl) {
+    await wait(300)
+    return mockCharities
+  }
+
+  try {
+    const res = await fetch(`${n8nBaseUrl}/charities`, { cache: 'no-store' })
+    if (!res.ok) throw new Error(`charities webhook returned ${res.status}`)
+    const data = (await res.json()) as { charities: CharityOrg[] }
+    if (!data || !Array.isArray(data.charities)) {
+      throw new Error('charities webhook returned an unexpected shape (missing charities[])')
+    }
+    return data.charities
+  } catch (err) {
+    console.error('getCharities: falling back to local mock data —', err)
+    return mockCharities
+  }
+}
+
+// ---------------------------------------------------------------------------
+// addCharity — admin-only. Server-side (n8n) enforces that only the admin
+// Telegram username may add an organization. No local mock fallback (same
+// reasoning as subscribe/unsubscribe — a fake local addition can't actually
+// persist for other users), so this surfaces the error to the caller if the
+// backend isn't reachable or there's no real Telegram session.
+// ---------------------------------------------------------------------------
+export async function addCharity(data: {
+  name: string
+  description: string
+  linkUrl: string
+  logoUrl: string
+}): Promise<CharityOrg> {
+  const n8nBaseUrl = import.meta.env.VITE_N8N_BASE_URL as string | undefined
+  const rawInitData = telegram.getRawInitData()
+
+  if (!n8nBaseUrl || !rawInitData) {
+    throw new Error('Backend not configured — adding a charity requires a real Telegram session')
+  }
+
+  const res = await fetch(`${n8nBaseUrl}/add-charity`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ initData: rawInitData, charity: data }),
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(`add-charity webhook returned ${res.status}`)
+  const created = (await res.json()) as CharityOrg
+  if (!created || typeof created.id !== 'string') {
+    throw new Error('add-charity webhook returned an unexpected shape (missing id)')
+  }
+  return created
 }
 
 // ---------------------------------------------------------------------------

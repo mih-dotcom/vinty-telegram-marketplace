@@ -102,9 +102,7 @@ export interface CharityOrg {
   name: string
   logoUrl: string
   description: string
-  location: string
-  acceptedItems: string[]
-  websiteUrl?: string
+  linkUrl: string
 }
 
 // A saved "notify me" filter — the periodic digest matches new listings
