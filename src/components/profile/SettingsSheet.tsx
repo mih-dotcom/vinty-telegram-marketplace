@@ -1,4 +1,4 @@
-import { BarChart3, Bell, ChevronRight } from 'lucide-react'
+import { BarChart3, Bell, ChevronRight, ShieldAlert } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Sheet } from '../layout/Sheet'
 import { useApp } from '../../context/AppContext'
@@ -24,6 +24,14 @@ export function SettingsSheet({ open, onClose }: { open: boolean; onClose: () =>
             action: () => {
               onClose()
               navigate('/admin-stats')
+            },
+          },
+          {
+            icon: ShieldAlert,
+            label: 'Отсеянные посты',
+            action: () => {
+              onClose()
+              navigate('/admin-moderation')
             },
           },
         ]

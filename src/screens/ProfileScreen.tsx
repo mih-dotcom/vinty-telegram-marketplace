@@ -165,6 +165,14 @@ export function ProfileScreen() {
                     <div className="absolute bottom-2 left-2">
                       {item.sold ? <SoldBadge /> : <PricePill price={item.price} currency={item.currency} />}
                     </div>
+                    {item.flagged && (
+                      <div
+                        className="absolute top-2 left-2 rounded-pill px-2 py-1 text-[10px] font-bold"
+                        style={{ background: 'rgba(0,0,0,0.55)', color: '#FCD34D' }}
+                      >
+                        На проверке
+                      </div>
+                    )}
                     {isOwn && (
                       <button
                         onClick={(e) => {

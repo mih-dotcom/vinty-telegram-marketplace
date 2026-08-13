@@ -11,6 +11,7 @@ import { ItemDetailScreen } from './screens/ItemDetailScreen'
 import { SubscriptionsScreen } from './screens/SubscriptionsScreen'
 import { GuidedTour } from './components/onboarding/GuidedTour'
 import { AdminStatsScreen } from './screens/AdminStatsScreen'
+import { AdminModerationScreen } from './screens/AdminModerationScreen'
 import { telegram } from './services/telegram'
 
 function ScrollToTop() {
@@ -43,7 +44,8 @@ function AppRoutes() {
     !pathname.startsWith('/item/') &&
     pathname !== '/subscriptions' &&
     !pathname.startsWith('/edit/') &&
-    pathname !== '/admin-stats'
+    pathname !== '/admin-stats' &&
+    pathname !== '/admin-moderation'
 
   return (
     <>
@@ -60,6 +62,7 @@ function AppRoutes() {
         <Route path="/item/:id" element={<ItemDetailScreen />} />
         <Route path="/subscriptions" element={<SubscriptionsScreen />} />
         <Route path="/admin-stats" element={<AdminStatsScreen />} />
+        <Route path="/admin-moderation" element={<AdminModerationScreen />} />
       </Routes>
       {showBottomNav && <BottomNav />}
     </>

@@ -344,23 +344,41 @@ export async function createListing(data: CreateListingInput): Promise<Item> {
     return createListingMock(data)
   }
 
+  let res: Response
   try {
-    const res = await fetch(`${n8nBaseUrl}/listings`, {
+    res = await fetch(`${n8nBaseUrl}/listings`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ initData: rawInitData, item: data }),
       cache: 'no-store',
     })
-    if (!res.ok) throw new Error(`listings webhook returned ${res.status}`)
-    const created = (await res.json()) as Item
-    if (!created || typeof created.id !== 'string') {
-      throw new Error('listings webhook returned an unexpected shape (missing id)')
-    }
-    return created
   } catch (err) {
-    console.error('createListing: falling back to local mock store —', err)
+    console.error('createListing: network error, falling back to local mock store —', err)
     return createListingMock(data)
   }
+
+  if (!res.ok) {
+    let message = `listings webhook returned ${res.status}`
+    try {
+      const body = (await res.json()) as { message?: string }
+      if (body?.message) message = body.message
+    } catch {
+      /* body wasn't JSON — keep default message */
+    }
+    // A real publish ban must never be silently swallowed by the mock
+    // fallback — that would let a banned user "succeed" locally.
+    if (message.startsWith('BANNED_UNTIL:')) {
+      throw new Error(message)
+    }
+    console.error('createListing: falling back to local mock store —', message)
+    return createListingMock(data)
+  }
+
+  const created = (await res.json()) as Item
+  if (!created || typeof created.id !== 'string') {
+    throw new Error('listings webhook returned an unexpected shape (missing id)')
+  }
+  return created
 }
 
 async function createListingMock(data: CreateListingInput): Promise<Item> {
@@ -1061,4 +1079,57 @@ export async function getAdminStats(): Promise<AdminStats> {
     throw new Error('admin-stats webhook returned an unexpected shape (missing totalUsers)')
   }
   return data
+}
+
+// ---------------------------------------------------------------------------
+// Moderation (admin-only) — flagged listings queue. Server-side (n8n)
+// enforces that only the admin Telegram username can call these.
+// ---------------------------------------------------------------------------
+export interface FlaggedItem {
+  id: string
+  title: string
+  price: number
+  currency: string
+  images: string[]
+  description: string
+  sellerId: string
+  sellerName: string | null
+  sellerUsername: string | null
+  createdAt: string
+}
+
+export async function getFlaggedListings(): Promise<FlaggedItem[]> {
+  const n8nBaseUrl = import.meta.env.VITE_N8N_BASE_URL as string | undefined
+  const rawInitData = telegram.getRawInitData()
+
+  if (!n8nBaseUrl || !rawInitData) {
+    throw new Error('Backend not configured — this requires a real Telegram session')
+  }
+
+  const res = await fetch(`${n8nBaseUrl}/flagged-listings?initData=${encodeURIComponent(rawInitData)}`, {
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(`flagged-listings webhook returned ${res.status}`)
+  const data = (await res.json()) as { items: FlaggedItem[] }
+  if (!data || !Array.isArray(data.items)) {
+    throw new Error('flagged-listings webhook returned an unexpected shape (missing items[])')
+  }
+  return data.items
+}
+
+export async function moderateListing(itemId: string, action: 'approve' | 'ban'): Promise<void> {
+  const n8nBaseUrl = import.meta.env.VITE_N8N_BASE_URL as string | undefined
+  const rawInitData = telegram.getRawInitData()
+
+  if (!n8nBaseUrl || !rawInitData) {
+    throw new Error('Backend not configured — this requires a real Telegram session')
+  }
+
+  const res = await fetch(`${n8nBaseUrl}/moderate-listing`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ initData: rawInitData, itemId, action }),
+    cache: 'no-store',
+  })
+  if (!res.ok) throw new Error(`moderate-listing webhook returned ${res.status}`)
 }

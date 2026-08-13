@@ -39,6 +39,7 @@ export interface Item {
   createdAt: string // ISO date string
   favorited?: boolean
   sold?: boolean
+  flagged?: boolean
 }
 
 export interface User {

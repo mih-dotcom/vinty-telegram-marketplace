@@ -158,11 +158,18 @@ export function UploadScreen() {
       const item = isEditMode ? await updateListing(editId!, data) : await createListing(data)
       telegram.hapticNotification('success')
       navigate(`/item/${item.id}`, { replace: isEditMode })
-    } catch {
+    } catch (err) {
       telegram.hapticNotification('error')
-      telegram.showAlert(
-        isEditMode ? 'Не удалось сохранить изменения. Попробуйте ещё раз.' : 'Не удалось создать объявление. Попробуйте ещё раз.'
-      )
+      const message = err instanceof Error ? err.message : ''
+      if (message.startsWith('BANNED_UNTIL:')) {
+        const untilDate = new Date(message.slice('BANNED_UNTIL:'.length))
+        const formatted = untilDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
+        telegram.showAlert(`Публикация временно недоступна — доступ ограничен до ${formatted}.`)
+      } else {
+        telegram.showAlert(
+          isEditMode ? 'Не удалось сохранить изменения. Попробуйте ещё раз.' : 'Не удалось создать объявление. Попробуйте ещё раз.'
+        )
+      }
     } finally {
       setSubmitting(false)
     }
