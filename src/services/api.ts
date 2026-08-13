@@ -237,7 +237,7 @@ async function getItemsMock(filters: ItemFilters = {}): Promise<PaginatedResult<
     results = results.filter((i) => subcategories.includes(i.subcategory))
   }
   if (genders?.length) {
-    results = results.filter((i) => genders.includes(i.gender))
+    results = results.filter((i) => i.gender !== null && genders.includes(i.gender))
   }
   if (typeof minPrice === 'number') {
     results = results.filter((i) => i.price >= minPrice)
@@ -697,7 +697,11 @@ export const FACETS = {
     'Носилась часто',
   ] as const,
 
-  categories: ['Обувь', 'Верхняя одежда', 'Верх', 'Низ', 'Аксессуары'] as const,
+  categories: ['Обувь', 'Верхняя одежда', 'Верх', 'Низ', 'Аксессуары', 'Собаки', 'Дети'] as const,
+
+  // Categories where gender/size don't apply the same way as clothing —
+  // the Upload form relaxes those two fields for these.
+  categoriesWithoutGender: ['Собаки', 'Дети'] as const,
 
   // Subcategory options depend on the selected Category.
   subcategoriesByCategory: {
@@ -747,6 +751,35 @@ export const FACETS = {
       'Кошельки',
       'Другое',
     ],
+    Собаки: [
+      'Поводки',
+      'Ошейники',
+      'Шлейки',
+      'Одежда для собак',
+      'Игрушки',
+      'Корм',
+      'Лакомства',
+      'Миски',
+      'Лежанки и домики',
+      'Переноски',
+      'Когти и уход',
+      'Аксессуары',
+      'Другое',
+    ],
+    Дети: [
+      'Одежда',
+      'Обувь',
+      'Слюнявчики',
+      'Игрушки',
+      'Коляски',
+      'Автокресла',
+      'Кроватки и манежи',
+      'Соски и бутылочки',
+      'Гигиена и уход',
+      'Книги и развитие',
+      'Аксессуары',
+      'Другое',
+    ],
   } as Record<Category, string[]>,
 
   // Size options depend on category — shoe sizing and clothing sizing don't
@@ -759,6 +792,20 @@ export const FACETS = {
     Верх: ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
     Низ: ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
     Аксессуары: ['Один размер'],
+    Собаки: ['XS', 'S', 'M', 'L', 'XL', 'Универсальный'],
+    Дети: [
+      '0-3 мес',
+      '3-6 мес',
+      '6-9 мес',
+      '9-12 мес',
+      '1-2 года',
+      '2-3 года',
+      '3-4 года',
+      '4-5 лет',
+      '5-6 лет',
+      '6-7 лет',
+      'Универсальный',
+    ],
   } as Record<Category, string[]>,
 
   sizes: [

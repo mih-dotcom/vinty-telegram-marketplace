@@ -237,7 +237,7 @@ export function ItemDetailScreen() {
           <ConditionBadge condition={item.condition} />
           <InfoChip label={`Размер ${item.size}`} />
           <InfoChip label={item.brand} />
-          <InfoChip label={item.gender} />
+          {item.gender && <InfoChip label={item.gender} />}
           {item.color && <InfoChip label={item.color} />}
         </div>
 

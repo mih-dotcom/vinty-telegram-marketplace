@@ -7,7 +7,7 @@
 
 export type Gender = 'Мужской' | 'Женский' | 'Унисекс' | 'Дети'
 
-export type Category = 'Обувь' | 'Верхняя одежда' | 'Верх' | 'Низ' | 'Аксессуары'
+export type Category = 'Обувь' | 'Верхняя одежда' | 'Верх' | 'Низ' | 'Аксессуары' | 'Собаки' | 'Дети'
 
 // Subcategories depend on the selected Category — the full list per category
 // lives in services/api.ts (FACETS.subcategoriesByCategory) rather than as a
@@ -32,7 +32,7 @@ export interface Item {
   condition: Condition
   category: Category
   subcategory: Subcategory
-  gender: Gender
+  gender: Gender | null
   color?: string
   sellerId: string
   description: string
@@ -87,7 +87,7 @@ export interface CreateListingInput {
   description: string
   category: Category
   subcategory: Subcategory
-  gender: Gender
+  gender: Gender | null
   size: string
   brand: string
   condition: Condition

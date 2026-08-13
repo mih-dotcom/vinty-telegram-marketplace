@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react'
-import { Footprints, Gem, LayoutGrid, Shirt, Wind } from 'lucide-react'
+import { Baby, Footprints, Gem, LayoutGrid, PawPrint, Shirt, Wind } from 'lucide-react'
 import type { Category } from '../../types'
 
 type IconComponent = ComponentType<{ size?: number | string; color?: string; strokeWidth?: number | string }>
@@ -34,6 +34,8 @@ const ITEMS: { key: Category | 'All'; label: string; icon: IconComponent }[] = [
   { key: 'Верх', label: 'Верх', icon: Shirt },
   { key: 'Низ', label: 'Низ', icon: PantsIcon },
   { key: 'Аксессуары', label: 'Аксессуары', icon: Gem },
+  { key: 'Собаки', label: 'Собаки', icon: PawPrint },
+  { key: 'Дети', label: 'Дети', icon: Baby },
 ]
 
 export function CategoryIconRow({

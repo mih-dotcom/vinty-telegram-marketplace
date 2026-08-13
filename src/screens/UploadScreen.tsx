@@ -62,7 +62,7 @@ export function UploadScreen() {
       }
       setTitle(found.title)
       setDescription(found.description)
-      setGender(found.gender)
+      setGender(found.gender ?? '')
       setCategory(found.category)
       setSubcategory(found.subcategory)
       setSize(found.size)
@@ -80,11 +80,12 @@ export function UploadScreen() {
 
   const subcategoryOptions = category ? FACETS.subcategoriesByCategory[category] : []
   const sizeOptions = category ? FACETS.sizesByCategory[category] : []
+  const genderRequired = category !== '' && !FACETS.categoriesWithoutGender.includes(category as never)
 
   const canSubmit =
     photos.length > 0 &&
     title.trim().length > 0 &&
-    gender !== '' &&
+    (!genderRequired || gender !== '') &&
     category !== '' &&
     subcategory !== '' &&
     size !== '' &&
@@ -145,7 +146,7 @@ export function UploadScreen() {
       const data = {
         title: title.trim(),
         description: description.trim(),
-        gender: gender as Gender,
+        gender: gender || null,
         category: category as Category,
         subcategory,
         size,
@@ -299,17 +300,19 @@ export function UploadScreen() {
           </div>
         </section>
 
-        {/* Пол */}
-        <section>
-          <h3 className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>
-            Пол
-          </h3>
-          <ChipSelect
-            options={FACETS.genders}
-            selected={gender ? [gender] : []}
-            onToggle={(v) => setGender(v === gender ? '' : v)}
-          />
-        </section>
+        {/* Пол — не нужен для категорий вроде "Собаки"/"Дети" */}
+        {genderRequired && (
+          <section>
+            <h3 className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>
+              Пол
+            </h3>
+            <ChipSelect
+              options={FACETS.genders}
+              selected={gender ? [gender] : []}
+              onToggle={(v) => setGender(v === gender ? '' : v)}
+            />
+          </section>
+        )}
 
         {/* Категория */}
         <section>
