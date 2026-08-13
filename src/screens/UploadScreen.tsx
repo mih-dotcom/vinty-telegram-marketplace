@@ -344,10 +344,10 @@ export function UploadScreen() {
           </button>
         </section>
 
-        {/* Подкатегория */}
+        {/* Подкатегория (для "Одежда" — сначала тип: Верх/Низ/Верхняя одежда) */}
         <section>
           <h3 className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>
-            Подкатегория
+            {category === 'Одежда' ? 'Тип' : 'Подкатегория'}
           </h3>
           <button
             onClick={() => category && setSubcategorySheetOpen(true)}
@@ -358,7 +358,7 @@ export function UploadScreen() {
               className="text-[15px]"
               style={{ color: subcategory ? 'var(--text-primary)' : 'var(--text-tertiary)' }}
             >
-              {subcategory || (category ? 'Выберите подкатегорию' : 'Сначала выберите категорию')}
+              {subcategory || (category ? 'Выберите тип и подкатегорию' : 'Сначала выберите категорию')}
             </span>
             <ChevronRight size={18} style={{ color: 'var(--text-tertiary)' }} />
           </button>
@@ -473,16 +473,41 @@ export function UploadScreen() {
         </div>
       </Sheet>
 
-      {/* Лист выбора подкатегории */}
-      <Sheet open={subcategorySheetOpen} onClose={() => setSubcategorySheetOpen(false)} title="Подкатегория">
-        <ChipSelect
-          options={subcategoryOptions}
-          selected={subcategory ? [subcategory] : []}
-          onToggle={(v) => {
-            setSubcategory(v)
-            setSubcategorySheetOpen(false)
-          }}
-        />
+      {/* Лист выбора подкатегории — для "Одежда" сгруппировано по типу
+          (Верхняя одежда / Верх / Низ), для остальных категорий — обычный
+          плоский список */}
+      <Sheet open={subcategorySheetOpen} onClose={() => setSubcategorySheetOpen(false)} title="Тип и подкатегория">
+        {category === 'Одежда' ? (
+          <div className="flex flex-col gap-5">
+            {Object.entries(FACETS.clothingSubcategoryGroups).map(([groupLabel, options]) => (
+              <div key={groupLabel}>
+                <h4
+                  className="text-[12px] font-bold uppercase tracking-wide mb-2"
+                  style={{ color: 'var(--text-tertiary)' }}
+                >
+                  {groupLabel}
+                </h4>
+                <ChipSelect
+                  options={options}
+                  selected={subcategory ? [subcategory] : []}
+                  onToggle={(v) => {
+                    setSubcategory(v)
+                    setSubcategorySheetOpen(false)
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <ChipSelect
+            options={subcategoryOptions}
+            selected={subcategory ? [subcategory] : []}
+            onToggle={(v) => {
+              setSubcategory(v)
+              setSubcategorySheetOpen(false)
+            }}
+          />
+        )}
       </Sheet>
 
       {/* Лист выбора размера */}

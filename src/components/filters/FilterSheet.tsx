@@ -153,17 +153,39 @@ export function FilterSheet({
           </div>
         </section>
 
-        {subcategoryOptions.length > 0 && (
+        {draft.category === 'Одежда' ? (
           <section>
             <h3 className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>
-              Подкатегория
+              Тип и подкатегория
             </h3>
-            <ChipSelect
-              options={subcategoryOptions}
-              selected={draft.subcategories}
-              onToggle={(v) => toggle('subcategories', v)}
-            />
+            <div className="flex flex-col gap-4">
+              {Object.entries(FACETS.clothingSubcategoryGroups).map(([groupLabel, options]) => (
+                <div key={groupLabel}>
+                  <h4 className="text-[11px] font-bold uppercase tracking-wide mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
+                    {groupLabel}
+                  </h4>
+                  <ChipSelect
+                    options={options}
+                    selected={draft.subcategories}
+                    onToggle={(v) => toggle('subcategories', v)}
+                  />
+                </div>
+              ))}
+            </div>
           </section>
+        ) : (
+          subcategoryOptions.length > 0 && (
+            <section>
+              <h3 className="text-[13px] font-bold uppercase tracking-wide mb-2" style={{ color: 'var(--text-tertiary)' }}>
+                Подкатегория
+              </h3>
+              <ChipSelect
+                options={subcategoryOptions}
+                selected={draft.subcategories}
+                onToggle={(v) => toggle('subcategories', v)}
+              />
+            </section>
+          )
         )}
 
         <section>

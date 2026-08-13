@@ -11,41 +11,15 @@ import {
   ShoppingBasket,
   Smartphone,
   Sofa,
-  Wind,
 } from 'lucide-react'
 import type { Category } from '../../types'
 
 type IconComponent = ComponentType<{ size?: number | string; color?: string; strokeWidth?: number | string }>
 
-// lucide-react has no literal "trousers" icon, so this is a small custom
-// line icon drawn in the same stroke style (2px, round joins) as the rest.
-function PantsIcon({ size = 24, color = 'currentColor', strokeWidth = 2 }: {
-  size?: number | string
-  color?: string
-  strokeWidth?: number | string
-}) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={color}
-      strokeWidth={strokeWidth}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M7 3v18h3l.5-13M17 3v18h-3l-.5-13M7 3h10" />
-    </svg>
-  )
-}
-
 const ITEMS: { key: Category | 'All'; label: string; icon: IconComponent }[] = [
   { key: 'All', label: 'Все', icon: LayoutGrid },
+  { key: 'Одежда', label: 'Одежда', icon: Shirt },
   { key: 'Обувь', label: 'Обувь', icon: Footprints },
-  { key: 'Верхняя одежда', label: 'Верхняя одежда', icon: Wind },
-  { key: 'Верх', label: 'Верх', icon: Shirt },
-  { key: 'Низ', label: 'Низ', icon: PantsIcon },
   { key: 'Аксессуары', label: 'Аксессуары', icon: Gem },
   { key: 'Питомцы', label: 'Питомцы', icon: PawPrint },
   { key: 'Дети', label: 'Дети', icon: Baby },

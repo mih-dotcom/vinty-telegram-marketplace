@@ -769,10 +769,8 @@ export const FACETS = {
   ] as const,
 
   categories: [
+    'Одежда',
     'Обувь',
-    'Верхняя одежда',
-    'Верх',
-    'Низ',
     'Аксессуары',
     'Питомцы',
     'Дети',
@@ -788,10 +786,8 @@ export const FACETS = {
   // (a tutoring service doesn't need a "size", produce doesn't need a
   // "condition", etc). Clothing categories default to needing all four.
   categoryFieldRules: {
+    Одежда: { gender: true, brand: true, condition: true, size: true },
     Обувь: { gender: true, brand: true, condition: true, size: true },
-    'Верхняя одежда': { gender: true, brand: true, condition: true, size: true },
-    Верх: { gender: true, brand: true, condition: true, size: true },
-    Низ: { gender: true, brand: true, condition: true, size: true },
     Аксессуары: { gender: true, brand: true, condition: true, size: true },
     Питомцы: { gender: false, brand: true, condition: true, size: true },
     Дети: { gender: false, brand: true, condition: true, size: true },
@@ -802,9 +798,10 @@ export const FACETS = {
     'Услуги репетиторов и поиск персонала': { gender: false, brand: false, condition: false, size: false },
   } as Record<Category, { gender: boolean; brand: boolean; condition: boolean; size: boolean }>,
 
-  // Subcategory options depend on the selected Category.
-  subcategoriesByCategory: {
-    Обувь: ['Кроссовки', 'Ботинки', 'Кеды', 'Сандалии', 'Сланцы', 'Туфли', 'Другое'],
+  // Only for category "Одежда" — groups the flat subcategory list into
+  // Верхняя одежда / Верх / Низ sections, so the picker still lets people
+  // narrow by "type" first, the way the old 3 separate categories did.
+  clothingSubcategoryGroups: {
     'Верхняя одежда': [
       'Бомберы',
       'Джинсовые куртки',
@@ -817,7 +814,6 @@ export const FACETS = {
       'Плащи',
       'Жилеты',
       'Куртки',
-      'Другое',
     ],
     Верх: [
       'Свитера',
@@ -832,9 +828,49 @@ export const FACETS = {
       'Платья',
       'Костюмы',
       'Майки',
+    ],
+    Низ: ['Джинсы', 'Брюки', 'Шорты', 'Спортивные штаны', 'Плавки', 'Юбки'],
+    Другое: ['Другое'],
+  } as Record<string, string[]>,
+
+  // Subcategory options depend on the selected Category.
+  subcategoriesByCategory: {
+    Одежда: [
+      // Верх
+      'Свитера',
+      'Кардиганы',
+      'Свитшоты',
+      'Олимпийки',
+      'Рубашки',
+      'Лонгсливы',
+      'Поло',
+      'Футболки',
+      'Худи',
+      'Платья',
+      'Костюмы',
+      'Майки',
+      // Верхняя одежда
+      'Бомберы',
+      'Джинсовые куртки',
+      'Анораки',
+      'Парки',
+      'Ветровки',
+      'Пиджаки',
+      'Пальто',
+      'Кожаные куртки',
+      'Плащи',
+      'Жилеты',
+      'Куртки',
+      // Низ
+      'Джинсы',
+      'Брюки',
+      'Шорты',
+      'Спортивные штаны',
+      'Плавки',
+      'Юбки',
       'Другое',
     ],
-    Низ: ['Джинсы', 'Брюки', 'Шорты', 'Спортивные штаны', 'Плавки', 'Юбки', 'Другое'],
+    Обувь: ['Кроссовки', 'Ботинки', 'Кеды', 'Сандалии', 'Сланцы', 'Туфли', 'Другое'],
     Аксессуары: [
       'Наручные часы',
       'Шапки',
@@ -945,10 +981,8 @@ export const FACETS = {
   // (see categoryFieldRules) get an empty array — the Upload form hides
   // the whole "Размер" section for those.
   sizesByCategory: {
+    Одежда: ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
     Обувь: ['35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46'],
-    'Верхняя одежда': ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
-    Верх: ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
-    Низ: ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'],
     Аксессуары: ['Один размер'],
     Питомцы: ['XS', 'S', 'M', 'L', 'XL', 'Универсальный'],
     Дети: [
