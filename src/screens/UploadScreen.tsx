@@ -6,6 +6,7 @@ import { Sheet } from '../components/layout/Sheet'
 import { ChipSelect } from '../components/filters/ChipSelect'
 import { ProgressRing, Spinner } from '../components/common/ProgressRing'
 import { createListing, updateListing, getItemById, uploadImage, searchBrands, FACETS } from '../services/api'
+import { compressImage } from '../utils/compressImage'
 import type { Category, Condition, Gender } from '../types'
 import { telegram } from '../services/telegram'
 import { useMainButton } from '../hooks/useTelegram'
@@ -109,7 +110,8 @@ export function UploadScreen() {
 
     await Promise.all(
       Array.from(files).map(async (file, i) => {
-        const url = await uploadImage(file) // TODO(n8n): заменить на реальный upload-эндпоинт
+        const compressed = await compressImage(file)
+        const url = await uploadImage(compressed)
         setPhotos((prev) =>
           prev.map((p) => (p.id === newPhotos[i].id ? { ...p, url, uploading: false } : p))
         )

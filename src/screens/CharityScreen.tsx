@@ -5,6 +5,7 @@ import { GlassCard } from '../components/common/GlassCard'
 import { Sheet } from '../components/layout/Sheet'
 import { Spinner, ProgressRing } from '../components/common/ProgressRing'
 import { getCharities, addCharity, uploadImage } from '../services/api'
+import { compressImage } from '../utils/compressImage'
 import type { CharityOrg } from '../types'
 import { telegram } from '../services/telegram'
 import { useApp } from '../context/AppContext'
@@ -143,7 +144,8 @@ function AddCharitySheet({
     if (!file) return
     setUploadingLogo(true)
     try {
-      const url = await uploadImage(file)
+      const compressed = await compressImage(file, { maxDimension: 600 })
+      const url = await uploadImage(compressed)
       setLogoUrl(url)
     } finally {
       setUploadingLogo(false)
