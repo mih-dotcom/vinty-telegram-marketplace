@@ -782,6 +782,7 @@ export const FACETS = {
     'Красота и здоровье',
     'Продукты питания',
     'Услуги репетиторов и поиск персонала',
+    'Транспорт',
   ] as const,
 
   // Which of Пол / Бренд / Состояние / Размер actually make sense for a
@@ -799,6 +800,7 @@ export const FACETS = {
     'Красота и здоровье': { gender: false, brand: true, condition: true, size: false },
     'Продукты питания': { gender: false, brand: false, condition: false, size: false },
     'Услуги репетиторов и поиск персонала': { gender: false, brand: false, condition: false, size: false },
+    Транспорт: { gender: false, brand: true, condition: false, size: false },
   } as Record<Category, { gender: boolean; brand: boolean; condition: boolean; size: boolean }>,
 
   // Only for category "Одежда" — groups the flat subcategory list into
@@ -977,6 +979,20 @@ export const FACETS = {
       'Курьер',
       'Другое',
     ],
+    Транспорт: [
+      'Легковые автомобили',
+      'Мотоциклы',
+      'Питбайки',
+      'Квадроциклы',
+      'Скутеры и мопеды',
+      'Велосипеды',
+      'Самокаты',
+      'Снегоходы',
+      'Лодки и катера',
+      'Прицепы',
+      'Запчасти и аксессуары',
+      'Другое',
+    ],
   } as Record<Category, string[]>,
 
   // Size options depend on category — shoe sizing and clothing sizing don't
@@ -1006,6 +1022,7 @@ export const FACETS = {
     'Красота и здоровье': [],
     'Продукты питания': [],
     'Услуги репетиторов и поиск персонала': [],
+    Транспорт: [],
   } as Record<Category, string[]>,
 
   sizes: [

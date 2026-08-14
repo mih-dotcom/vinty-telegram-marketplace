@@ -2,6 +2,7 @@ import type { ComponentType } from 'react'
 import {
   Baby,
   Briefcase,
+  Car,
   Footprints,
   Gem,
   HeartPulse,
@@ -28,6 +29,7 @@ const ITEMS: { key: Category | 'All'; label: string; icon: IconComponent }[] = [
   { key: 'Красота и здоровье', label: 'Красота', icon: HeartPulse },
   { key: 'Продукты питания', label: 'Продукты', icon: ShoppingBasket },
   { key: 'Услуги репетиторов и поиск персонала', label: 'Услуги', icon: Briefcase },
+  { key: 'Транспорт', label: 'Транспорт', icon: Car },
 ]
 
 export function CategoryIconRow({

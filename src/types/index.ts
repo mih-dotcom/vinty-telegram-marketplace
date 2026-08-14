@@ -18,6 +18,7 @@ export type Category =
   | 'Красота и здоровье'
   | 'Продукты питания'
   | 'Услуги репетиторов и поиск персонала'
+  | 'Транспорт'
 
 // Subcategories depend on the selected Category — the full list per category
 // lives in services/api.ts (FACETS.subcategoriesByCategory) rather than as a
