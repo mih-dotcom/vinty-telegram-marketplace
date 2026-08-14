@@ -177,11 +177,13 @@ export async function getItems(filters: ItemFilters = {}): Promise<PaginatedResu
     if (filters.sortBy) params.set('sortBy', filters.sortBy)
     if (filters.page) params.set('page', String(filters.page))
     if (filters.pageSize) params.set('pageSize', String(filters.pageSize))
+    // Passed inline so the backend can mark `favorited` in the same
+    // request — avoids a second round-trip (and a second n8n execution)
+    // just to fetch the favorites list separately.
+    const rawInitData = telegram.getRawInitData()
+    if (rawInitData) params.set('initData', rawInitData)
 
-    const [res, favoritedIds] = await Promise.all([
-      fetch(`${n8nBaseUrl}/items?${params.toString()}`, { cache: 'no-store' }),
-      getFavoritedIds(),
-    ])
+    const res = await fetch(`${n8nBaseUrl}/items?${params.toString()}`, { cache: 'no-store' })
     if (!res.ok) throw new Error(`items webhook returned ${res.status}`)
     const data = (await res.json()) as PaginatedResult<Item>
     // Guard against a webhook that isn't wired up correctly yet (wrong shape,
@@ -189,10 +191,7 @@ export async function getItems(filters: ItemFilters = {}): Promise<PaginatedResu
     if (!data || !Array.isArray(data.items)) {
       throw new Error('items webhook returned an unexpected shape (missing items[])')
     }
-    return {
-      ...data,
-      items: data.items.map((i) => ({ ...i, favorited: favoritedIds.has(i.id) })),
-    }
+    return data
   } catch (err) {
     console.error('getItems: falling back to local mock data —', err)
     return getItemsMock(filters)
@@ -305,17 +304,21 @@ export async function getItemById(id: string): Promise<Item | undefined> {
   }
 
   try {
-    const [res, favoritedIds] = await Promise.all([
-      fetch(`${n8nBaseUrl}/item-detail?id=${encodeURIComponent(id)}`, { cache: 'no-store' }),
-      getFavoritedIds(),
-    ])
+    // Passed inline so the backend can mark `favorited` in the same
+    // request — avoids a second round-trip (and a second n8n execution)
+    // just to fetch the favorites list separately.
+    const rawInitData = telegram.getRawInitData()
+    const params = new URLSearchParams({ id })
+    if (rawInitData) params.set('initData', rawInitData)
+
+    const res = await fetch(`${n8nBaseUrl}/item-detail?${params.toString()}`, { cache: 'no-store' })
     if (!res.ok) throw new Error(`item detail webhook returned ${res.status}`)
     const data = (await res.json()) as (Item & { notFound?: boolean }) | { notFound: true }
     if ('notFound' in data && data.notFound) return undefined
     if (!data || typeof (data as Item).id !== 'string') {
       throw new Error('item detail webhook returned an unexpected shape (missing id)')
     }
-    return { ...(data as Item), favorited: favoritedIds.has((data as Item).id) }
+    return data as Item
   } catch (err) {
     console.error('getItemById: falling back to local mock data —', err)
     return getItemByIdMock(id)
